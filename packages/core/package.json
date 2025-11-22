@@ -1,0 +1,26 @@
+{
+  "name": "@mosmos/vaultkey-core",
+  "version": "0.1.0",
+  "description": "VaultKey のコアライブラリ。機密情報の暗号化保存、WebAuthn Passkey 認証、監査ログなどの機能を提供します。",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "security",
+    "secrets",
+    "vault",
+    "encryption",
+    "webauthn",
+    "passkey",
+    "credentials",
+    "typescript"
+  ],
+  "author": "Takahito Hashimoto",
+  "license": "MIT",
+  "devDependencies": {
+    "typescript": "^5.9.3"
+  }
+}

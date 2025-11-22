@@ -1,0 +1,32 @@
+{
+  "name": "@mosmos/vaultkey",
+  "version": "0.1.0",
+  "description": "VaultKey の CLI ツール。コマンドラインから機密情報を管理できます。",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "bin": {
+    "vaultkey": "dist/cli.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "security",
+    "secrets",
+    "vault",
+    "cli",
+    "password-manager",
+    "webauthn",
+    "passkey",
+    "typescript"
+  ],
+  "author": "Takahito Hashimoto",
+  "license": "MIT",
+  "dependencies": {
+    "@mosmos/vaultkey-core": "workspace:*"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.3"
+  }
+}
