@@ -35,7 +35,7 @@
 - ✅ エラーハンドリング (FR-5.2)
 
 **データベース**:
-- SQLite (better-sqlite3)
+- SQLite (node:sqlite)
 - 基本スキーマ: `users`, `secrets`, `tokens`
 
 **セキュリティ**:

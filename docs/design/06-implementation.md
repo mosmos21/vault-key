@@ -10,7 +10,7 @@
 ### 6.2.1 本番依存ライブラリ (dependencies)
 
 - **@simplewebauthn/server**: WebAuthn (Passkey) 認証の実装 (登録・認証フローの生成と検証)
-- **better-sqlite3**: SQLite データベースクライアント (同期 API、高速、型安全)
+- **node:sqlite**: Node.js 組み込み SQLite データベースモジュール (同期 API、軽量、追加パッケージ不要)
 - **pg**: PostgreSQL データベースクライアント (非同期 API、トランザクション、コネクションプール)
 - **commander**: CLI フレームワーク (コマンド定義、オプション解析、ヘルプ生成)
 - **chalk**: CLI の色付け出力 (テキストの装飾、エラーメッセージの強調)
@@ -26,10 +26,11 @@
 
 ## 6.3 データベース
 
-### 6.3.1 開発環境: SQLite (better-sqlite3)
+### 6.3.1 開発環境: SQLite (node:sqlite)
 
 **特徴**:
 - ファイルベースのデータベース
+- Node.js 組み込みモジュール (追加パッケージ不要)
 - 同期 API
 - 軽量、高速
 - トランザクション対応

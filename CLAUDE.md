@@ -6,6 +6,15 @@
 
 VaultKey は機密情報を安全に管理するための TypeScript ライブラリおよび CLI ツールです。WebAuthn Passkey による認証、暗号化された機密情報の保存、監査ログなどの機能を提供します。
 
+## プロジェクト構造
+
+このプロジェクトは monorepo 構成で、以下のパッケージで構成されています:
+
+- `packages/core`: VaultKey のコアライブラリ (`@mosmos_21/vault-key-core`)
+- `packages/cli`: CLI ツール (`@mosmos_21/vault-key-cli`)
+
+パッケージ管理には pnpm workspace を使用しています。
+
 ## ドキュメント構造
 
 - [docs/requirements/](./docs/requirements/): 要件定義書
@@ -18,7 +27,7 @@ VaultKey は機密情報を安全に管理するための TypeScript ライブ�
 - [設計: データベース](./docs/design/02-database.md)
 - [設計: モジュール設計](./docs/design/03-modules.md)
 - [設計: セキュリティ](./docs/design/04-security.md)
-- [設計: API仕様](./docs/design/05-api.md)
+- [設計: API 仕様](./docs/design/05-api.md)
 - [設計: 実装計画](./docs/design/06-implementation.md)
 - [設計: 開発ガイドライン](./docs/design/07-development.md)
 
@@ -36,15 +45,10 @@ VaultKey は機密情報を安全に管理するための TypeScript ライブ�
 
 ### TypeScript 実装ガイドライン
 
-- `interface` は使わず、型を定義するときは `type` を使う
+- `interface` は使わず、型を定義するときは `type` を使う (特別な理由がある場合を除く)
 - `class`, `function` は使わず、関数定義には `const` を使う (特別な理由がある場合を除く)
 - 基本的に `default export` は使わず `named export` を使う
 - 返り値の型は基本的に明記不要 (必要な場合は `ReturnType<typeof funcName>` で型定義)
-
-### React Hook 実装ガイドライン (該当する場合)
-
-- `useHook` という名前は禁止 (具体的な目的がわかる命名にする)
-- hook ファイル名には `hook.ts` を使わず、実装している hook 名に合わせる
 
 ### エラーハンドリング
 
@@ -101,7 +105,7 @@ VaultKey は機密情報を安全に管理するための TypeScript ライブ�
 
 - すべてのユーザーは対等な権限を持つ (管理者・一般ユーザーの区別なし)
 - 各ユーザーは自分が作成した機密情報のみにアクセス可能
-- キーの名前空間はユーザーごとに分離される (`secrets` テーブルの複合主キー: `user_id`, `key`)
+- キーの名前空間はユーザーごとに分離される (`secrets` テーブルの複合主キー: `userId`, `key`)
 
 ### 認証フロー
 
@@ -132,9 +136,18 @@ VaultKey は機密情報を安全に管理するための TypeScript ライブ�
 
 ### データベース
 
-- 開発環境: SQLite
-- 本番環境: PostgreSQL
-- マイグレーションは Knex.js を使用
+- **node:sqlite**: Node.js 24+ 組み込みの SQLite データベースモジュールを使用
+  - 追加パッケージ不要 (ネイティブモジュールのビルドが不要)
+  - 同期 API でシンプルな実装
+  - camelCase の命名規則を使用 (例: `userId`, `createdAt`)
+- データベースファイルのデフォルトパス: `~/.vaultkey/vaultkey.db`
+- テスト時は `:memory:` データベースを使用
+
+### データベーススキーマの命名規則
+
+- テーブル名: 複数形 (例: `users`, `secrets`, `auditLogs`)
+- カラム名: camelCase (例: `userId`, `createdAt`, `tokenHash`)
+- 複合主キーの順序: ユーザー固有のリソースは `userId` を先頭に配置
 
 ### CLI 実装
 
@@ -142,16 +155,65 @@ VaultKey は機密情報を安全に管理するための TypeScript ライブ�
 - 危険な操作には確認ダイアログを表示 (`--force` で確認スキップ可能)
 - 出力フォーマットは JSON/YAML/テーブル形式をサポート
 
+## 開発コマンド
+
+### パッケージ管理
+
+```bash
+# 依存関係のインストール
+pnpm install
+
+# パッケージの追加 (例: core パッケージに追加)
+pnpm --filter @mosmos_21/vault-key-core add <package>
+
+# パッケージの削除
+pnpm --filter @mosmos_21/vault-key-core remove <package>
+```
+
+### ビルド
+
+```bash
+# 全パッケージのビルド
+pnpm build
+
+# 特定パッケージのビルド
+pnpm --filter @mosmos_21/vault-key-core build
+```
+
+### テスト
+
+```bash
+# 全パッケージのテスト実行
+pnpm test
+
+# 特定パッケージのテスト実行
+pnpm --filter @mosmos_21/vault-key-core test
+```
+
+### Lint & Format
+
+```bash
+# ESLint チェック
+pnpm check:eslint
+
+# Prettier チェック
+pnpm check:prettier
+
+# すべてのチェック実行
+pnpm check
+```
+
 ## 環境変数
 
 - `LOG_LEVEL`: ログレベル (DEBUG, INFO, WARNING, ERROR, CRITICAL)
 - `VAULTKEY_AUTH_PORT`: 認証サーバーのポート (デフォルト: 5432)
+- `VAULTKEY_DB_PATH`: データベースファイルのパス (デフォルト: `~/.vaultkey/vaultkey.db`)
 
 ## コミットメッセージ
 
 - 日本語で記述
 - 全角文字と半角文字の間にスペースを入れる (周囲の既存文章とのバランスに考慮)
-- RuboCop 違反修正など、主目的でない変更はコミットメッセージに含めない
+- 主目的でない変更はコミットメッセージに含めない
 
 ## その他
 
