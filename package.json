@@ -1,0 +1,25 @@
+{
+  "name": "vault-key",
+  "description": "機密情報を安全に管理するための TypeScript ライブラリおよび CLI ツール。WebAuthn Passkey 認証、暗号化された機密情報の保存、監査ログなどの機能を提供します。",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "security",
+    "secrets",
+    "vault",
+    "encryption",
+    "webauthn",
+    "passkey",
+    "credentials",
+    "password-manager",
+    "cli",
+    "typescript"
+  ],
+  "author": "Takahito Hashimoto",
+  "license": "MIT",
+  "packageManager": "pnpm@10.22.0",
+  "devDependencies": {
+    "typescript": "^5.9.3"
+  }
+}
