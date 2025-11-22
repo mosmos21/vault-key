@@ -48,11 +48,11 @@
 
 ```
 packages/
-├── core/                    # @mosmos21/vaultkey-core (ライブラリ)
+├── core/                    # @mosmos_21/vault-key-core (ライブラリ)
 │   ├── src/
 │   ├── package.json
 │   └── tsconfig.json
-└── cli/                     # @mosmos21/vaultkey (CLI)
+└── cli/                     # @mosmos_21/vault-key-cli (CLI)
     ├── src/
     ├── package.json
     └── tsconfig.json
@@ -60,7 +60,7 @@ packages/
 
 ### 6.4.2 core パッケージ (主要項目)
 
-- **name**: `@mosmos21/vaultkey-core`
+- **name**: `@mosmos_21/vault-key-core`
 - **version**: `0.1.0`
 - **type**: `module` (ESM を使用)
 - **main**: `./dist/index.js` (ライブラリエントリポイント)
@@ -71,13 +71,13 @@ packages/
 
 ### 6.4.3 cli パッケージ (主要項目)
 
-- **name**: `@mosmos21/vaultkey-cli`
+- **name**: `@mosmos_21/vault-key-cli`
 - **version**: `0.1.0`
 - **type**: `module` (ESM を使用)
 - **bin**: `{ "vaultkey": "./dist/cli.js" }` (CLI コマンド)
 - **engines**: `{ "node": ">=18.0.0" }` (Node.js 18 以上)
 - **files**: `["dist", "README.md", "LICENSE"]` (npm 公開時に含めるファイル)
-- **dependencies**: `@mosmos21/vaultkey-core`、commander、chalk など CLI 関連ライブラリ
+- **dependencies**: `@mosmos_21/vault-key-core`、commander、chalk など CLI 関連ライブラリ
 
 ## 6.5 環境変数
 

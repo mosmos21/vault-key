@@ -17,13 +17,13 @@ VaultKey は以下の機能を提供します:
 ### CLI ツール
 
 ```bash
-npm install -g @mosmos21/vaultkey
+npm install -g @mosmos_21/vault-key-cli
 ```
 
 ### ライブラリ
 
 ```bash
-npm install @mosmos21/vaultkey-core
+npm install @mosmos_21/vault-key-core
 ```
 
 ## クイックスタート
@@ -68,7 +68,7 @@ vaultkey secret list
 ## ライブラリとしての利用
 
 ```typescript
-import { VaultKeyClient } from '@mosmos21/vaultkey-core';
+import { VaultKeyClient } from '@mosmos_21/vault-key-core';
 
 const client = new VaultKeyClient();
 

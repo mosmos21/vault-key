@@ -4,7 +4,7 @@
 
 ```
 packages/
-├── core/                  # @mosmos21/vaultkey-core (ライブラリパッケージ)
+├── core/                  # @mosmos_21/vault-key-core (ライブラリパッケージ)
 │   ├── src/
 │   │   ├── index.ts               # パッケージエントリポイント
 │   │   ├── client.ts              # VaultKeyClient (公開 API)
@@ -56,7 +56,7 @@ packages/
 │   ├── package.json
 │   └── tsconfig.json
 │
-└── cli/                   # @mosmos21/vaultkey (CLI パッケージ)
+└── cli/                   # @mosmos_21/vault-key-cli (CLI パッケージ)
     ├── src/
     │   ├── cli.ts                 # CLI エントリポイント
     │   ├── commands/              # CLI コマンド
