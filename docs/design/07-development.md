@@ -22,7 +22,41 @@
 
 ## 7.2 テスト戦略
 
-### 7.2.1 ユニットテスト
+### 7.2.1 テストファイルの配置と命名規則
+
+**命名規則**:
+- 実装ファイル `foo.ts` に対応するテストファイルは `foo.test.ts` とする
+- テストファイルは実装ファイルと同じディレクトリ構造で `__tests__` ディレクトリ配下に配置する
+
+**ディレクトリ構造例**:
+```
+packages/core/
+├── src/
+│   ├── database/
+│   │   ├── connection.ts
+│   │   └── repositories/
+│   │       ├── userRepository.ts
+│   │       ├── secretRepository.ts
+│   │       └── tokenRepository.ts
+│   └── utils/
+│       └── validators.ts
+└── __tests__/
+    ├── database/
+    │   ├── connection.test.ts
+    │   └── repositories/  (オプション: 必要に応じてさらに分割)
+    │       ├── userRepository.test.ts
+    │       ├── secretRepository.test.ts
+    │       └── tokenRepository.test.ts
+    └── utils/
+        └── validators.test.ts
+```
+
+**基本方針**:
+- 1つの実装ファイルに対して1つのテストファイルを作成
+- テストファイルは対応する実装ファイルの責務のみをテスト
+- 複数のモジュールにまたがる統合テストは別途 `integration/` ディレクトリに配置
+
+### 7.2.2 ユニットテスト
 
 **目標**: すべてのビジネスロジックをカバー (カバレッジ 100%)
 
@@ -37,7 +71,7 @@
 - 異常系: キーが存在しない場合の `NotFoundError`
 - 異常系: 有効期限切れの場合の `ExpiredError`
 
-### 7.2.2 統合テスト
+### 7.2.3 統合テスト
 
 **目標**: データベースを含む E2E テスト
 
@@ -48,7 +82,7 @@
 - ユーザー認証フロー
 - トークン管理フロー
 
-### 7.2.3 CLI テスト
+### 7.2.4 CLI テスト
 
 **使用ライブラリ**: `execa` (コマンド実行)
 
