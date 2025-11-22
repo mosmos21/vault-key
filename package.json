@@ -7,6 +7,7 @@
     "check": "run-s check:*",
     "check:eslint": "eslint .",
     "check:prettier": "prettier --check .",
+    "check:tsc": "tsc --noEmit",
     "fix": "run-s fix:*",
     "fix:eslint": "eslint . --fix",
     "fix:prettier": "prettier --write .",

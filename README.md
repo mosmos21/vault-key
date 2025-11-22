@@ -136,10 +136,37 @@ VaultKey は以下の技術を使用しています:
 npm install
 ```
 
+### コード品質チェック
+
+```bash
+# すべてのチェックを実行 (ESLint, Prettier, TypeScript)
+npm run check
+
+# 個別のチェック
+npm run check:eslint    # ESLint チェック
+npm run check:prettier  # Prettier フォーマットチェック
+npm run check:tsc       # TypeScript コンパイルチェック
+
+# 自動修正
+npm run fix             # すべての自動修正を実行
+npm run fix:eslint      # ESLint の自動修正
+npm run fix:prettier    # Prettier の自動フォーマット
+```
+
 ### テスト実行
 
 ```bash
+# watch モード
 npm test
+
+# 一度だけ実行
+npm run test:run
+
+# カバレッジ付きで実行
+npm run test:coverage
+
+# UI モード
+npm run test:ui
 ```
 
 ### ビルド
