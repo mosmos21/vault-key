@@ -82,6 +82,19 @@ const secret = await client.getSecret('api_key', token);
 await client.deleteSecret('api_key', token);
 ```
 
+## 技術スタック
+
+VaultKey は以下の技術を使用しています:
+
+- **TypeScript 5+** / **Node.js 24+**
+- **node:sqlite**: Node.js 組み込みの SQLite データベースモジュール
+  - 追加パッケージ不要 (ネイティブモジュールのビルドが不要)
+  - 同期 API でシンプルな実装
+  - 軽量で高速
+- **AES-256-GCM**: 機密情報の暗号化
+- **WebAuthn**: Passkey による認証
+- **PostgreSQL**: 本番環境での使用をサポート (オプション)
+
 ## 主な機能
 
 ### 機密情報管理

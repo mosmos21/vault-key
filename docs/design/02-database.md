@@ -6,118 +6,118 @@
 
 ```sql
 CREATE TABLE secrets (
-    user_id TEXT NOT NULL,                -- ユーザー ID (外部参照)
+    userId TEXT NOT NULL,                 -- ユーザー ID (外部参照)
     key TEXT NOT NULL,                    -- 機密情報のキー
-    encrypted_value BLOB NOT NULL,        -- 暗号化された値
-    created_at TEXT NOT NULL,             -- ISO 8601 形式
-    updated_at TEXT NOT NULL,             -- ISO 8601 形式
-    created_by TEXT NOT NULL,             -- 作成者のユーザー ID
-    updated_by TEXT,                      -- 最終更新者のユーザー ID
-    last_accessed_at TEXT,                -- 最終アクセス日時 (ISO 8601 形式)
-    expires_at TEXT,                      -- 有効期限 (ISO 8601 形式、NULL の場合は無期限)
+    encryptedValue BLOB NOT NULL,         -- 暗号化された値
+    createdAt TEXT NOT NULL,              -- ISO 8601 形式
+    updatedAt TEXT NOT NULL,              -- ISO 8601 形式
+    createdBy TEXT NOT NULL,              -- 作成者のユーザー ID
+    updatedBy TEXT,                       -- 最終更新者のユーザー ID
+    lastAccessedAt TEXT,                  -- 最終アクセス日時 (ISO 8601 形式)
+    expiresAt TEXT,                       -- 有効期限 (ISO 8601 形式、NULL の場合は無期限)
     metadata TEXT,                        -- JSON 形式で追加情報を保存 (将来の拡張用)
-    PRIMARY KEY (user_id, key),           -- 複合主キー (ユーザーごとにキー名前空間を分離)
-    FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE,
-    FOREIGN KEY (created_by) REFERENCES users(user_id),
-    FOREIGN KEY (updated_by) REFERENCES users(user_id)
+    PRIMARY KEY (userId, key),            -- 複合主キー (ユーザーごとにキー名前空間を分離)
+    FOREIGN KEY (userId) REFERENCES users(userId) ON DELETE CASCADE,
+    FOREIGN KEY (createdBy) REFERENCES users(userId),
+    FOREIGN KEY (updatedBy) REFERENCES users(userId)
 );
 
 -- インデックス
-CREATE INDEX idx_secrets_user_id ON secrets(user_id);
-CREATE INDEX idx_secrets_updated_at ON secrets(updated_at);
-CREATE INDEX idx_secrets_expires_at ON secrets(expires_at);
-CREATE INDEX idx_secrets_last_accessed_at ON secrets(last_accessed_at);
+CREATE INDEX idx_secrets_userId ON secrets(userId);
+CREATE INDEX idx_secrets_updatedAt ON secrets(updatedAt);
+CREATE INDEX idx_secrets_expiresAt ON secrets(expiresAt);
+CREATE INDEX idx_secrets_lastAccessedAt ON secrets(lastAccessedAt);
 ```
 
 ### 2.1.2 users (ユーザー)
 
 ```sql
 CREATE TABLE users (
-    user_id TEXT PRIMARY KEY,
-    credential_id TEXT NOT NULL UNIQUE,   -- WebAuthn Credential ID
-    public_key TEXT NOT NULL,             -- 公開鍵 (Base64 エンコード)
-    created_at TEXT NOT NULL,             -- ISO 8601 形式
-    last_login TEXT,                      -- 最終ログイン日時
-    CHECK (length(user_id) > 0)
+    userId TEXT PRIMARY KEY,
+    credentialId TEXT NOT NULL UNIQUE,    -- WebAuthn Credential ID
+    publicKey TEXT NOT NULL,              -- 公開鍵 (Base64 エンコード)
+    createdAt TEXT NOT NULL,              -- ISO 8601 形式
+    lastLogin TEXT,                       -- 最終ログイン日時
+    CHECK (length(userId) > 0)
 );
 
 -- インデックス
-CREATE INDEX idx_users_credential_id ON users(credential_id);
+CREATE INDEX idx_users_credentialId ON users(credentialId);
 ```
 
 ### 2.1.3 tokens (アクセストークン)
 
 ```sql
 CREATE TABLE tokens (
-    token_hash TEXT PRIMARY KEY,          -- SHA-256 ハッシュ
-    user_id TEXT NOT NULL,
-    expires_at TEXT NOT NULL,             -- ISO 8601 形式
-    created_at TEXT NOT NULL,             -- ISO 8601 形式
-    is_revoked INTEGER DEFAULT 0,         -- 0: 有効, 1: 無効
-    revoked_at TEXT,                      -- 無効化日時 (ISO 8601 形式)
-    last_used_at TEXT,                    -- 最終使用日時 (ISO 8601 形式)
-    FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE,
-    CHECK (is_revoked IN (0, 1))
+    tokenHash TEXT PRIMARY KEY,           -- SHA-256 ハッシュ
+    userId TEXT NOT NULL,
+    expiresAt TEXT NOT NULL,              -- ISO 8601 形式
+    createdAt TEXT NOT NULL,              -- ISO 8601 形式
+    isRevoked INTEGER DEFAULT 0,          -- 0: 有効, 1: 無効
+    revokedAt TEXT,                       -- 無効化日時 (ISO 8601 形式)
+    lastUsedAt TEXT,                      -- 最終使用日時 (ISO 8601 形式)
+    FOREIGN KEY (userId) REFERENCES users(userId) ON DELETE CASCADE,
+    CHECK (isRevoked IN (0, 1))
 );
 
 -- インデックス
-CREATE INDEX idx_tokens_user_id ON tokens(user_id);
-CREATE INDEX idx_tokens_expires_at ON tokens(expires_at);
-CREATE INDEX idx_tokens_is_revoked ON tokens(is_revoked);
-CREATE INDEX idx_tokens_created_at ON tokens(created_at);
+CREATE INDEX idx_tokens_userId ON tokens(userId);
+CREATE INDEX idx_tokens_expiresAt ON tokens(expiresAt);
+CREATE INDEX idx_tokens_isRevoked ON tokens(isRevoked);
+CREATE INDEX idx_tokens_createdAt ON tokens(createdAt);
 ```
 
 ### 2.1.4 audit_logs (監査ログ)
 
 ```sql
-CREATE TABLE audit_logs (
+CREATE TABLE auditLogs (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    user_id TEXT NOT NULL,
+    userId TEXT NOT NULL,
     action TEXT NOT NULL,                 -- 'get', 'store', 'update', 'delete', 'list', 'login', 'logout', 'register'
-    resource_key TEXT,                    -- 対象のキー (機密情報操作の場合)
+    resourceKey TEXT,                     -- 対象のキー (機密情報操作の場合)
     timestamp TEXT NOT NULL,              -- ISO 8601 形式
     success INTEGER NOT NULL,             -- 0: 失敗, 1: 成功
-    error_message TEXT,                   -- エラーメッセージ (失敗時のみ)
-    FOREIGN KEY (user_id) REFERENCES users(user_id),
-    CHECK (action IN ('get', 'store', 'update', 'delete', 'list', 'login', 'logout', 'register', 'list_expiring', 'list_expired', 'cleanup_expired')),
+    errorMessage TEXT,                    -- エラーメッセージ (失敗時のみ)
+    FOREIGN KEY (userId) REFERENCES users(userId),
+    CHECK (action IN ('get', 'store', 'update', 'delete', 'list', 'login', 'logout', 'register', 'listExpiring', 'listExpired', 'cleanupExpired')),
     CHECK (success IN (0, 1))
 );
 
 -- インデックス
-CREATE INDEX idx_audit_logs_user_id ON audit_logs(user_id);
-CREATE INDEX idx_audit_logs_timestamp ON audit_logs(timestamp);
-CREATE INDEX idx_audit_logs_action ON audit_logs(action);
-CREATE INDEX idx_audit_logs_resource_key ON audit_logs(resource_key);
+CREATE INDEX idx_auditLogs_userId ON auditLogs(userId);
+CREATE INDEX idx_auditLogs_timestamp ON auditLogs(timestamp);
+CREATE INDEX idx_auditLogs_action ON auditLogs(action);
+CREATE INDEX idx_auditLogs_resourceKey ON auditLogs(resourceKey);
 ```
 
 ## 2.2 ER 図
 
 ```
 users
-  ├── user_id (PK)
-  ├── credential_id (UNIQUE)
-  ├── public_key
+  ├── userId (PK)
+  ├── credentialId (UNIQUE)
+  ├── publicKey
   └── ...
 
-secrets                     tokens                  audit_logs
-  ├── user_id (FK, PK) ───┐  ├── token_hash (PK)     ├── id (PK)
-  ├── key (PK)            │  ├── user_id (FK) ───┐   ├── user_id (FK) ───┐
-  ├── encrypted_value     │  ├── expires_at      │   ├── action         │
-  ├── created_by (FK) ────┤  └── ...             │   └── ...            │
-  ├── updated_by (FK) ────┤                      │                      │
-  ├── expires_at          │                      │                      │
-  ├── last_accessed_at    │                      │                      │
-  └── ...                 │                      │                      │
-                          │                      │                      │
-                          └──────────────────────┴──────────────────────┘
-                                      users.user_id
+secrets                     tokens                  auditLogs
+  ├── userId (FK, PK) ────┐  ├── tokenHash (PK)      ├── id (PK)
+  ├── key (PK)            │  ├── userId (FK) ───┐   ├── userId (FK) ───┐
+  ├── encryptedValue      │  ├── expiresAt      │   ├── action         │
+  ├── createdBy (FK) ─────┤  └── ...            │   └── ...            │
+  ├── updatedBy (FK) ─────┤                     │                      │
+  ├── expiresAt           │                     │                      │
+  ├── lastAccessedAt      │                     │                      │
+  └── ...                 │                     │                      │
+                          │                     │                      │
+                          └─────────────────────┴──────────────────────┘
+                                      users.userId
 ```
 
 ## 2.3 データの分離とアクセス制御
 
 ### 2.3.1 ユーザーごとの名前空間分離
 
-`secrets` テーブルの複合主キー `(user_id, key)` により、以下が保証される:
+`secrets` テーブルの複合主キー `(userId, key)` により、以下が保証される:
 
 - 同じキー名を複数のユーザーが使用可能
 - ユーザー A の `api_key` とユーザー B の `api_key` は別の機密情報として管理される
@@ -125,11 +125,11 @@ secrets                     tokens                  audit_logs
 
 ### 2.3.2 外部キー制約によるデータ整合性
 
-- `secrets.user_id` → `users.user_id` (CASCADE DELETE)
+- `secrets.userId` → `users.userId` (CASCADE DELETE)
   - ユーザー削除時、そのユーザーの機密情報もすべて削除される
-- `tokens.user_id` → `users.user_id` (CASCADE DELETE)
+- `tokens.userId` → `users.userId` (CASCADE DELETE)
   - ユーザー削除時、そのユーザーのトークンもすべて削除される
-- `audit_logs.user_id` → `users.user_id`
+- `auditLogs.userId` → `users.userId`
   - ユーザー削除時、監査ログは保持される (履歴として重要)
 
 ### 2.3.3 トークン数制限のクエリ
@@ -137,12 +137,12 @@ secrets                     tokens                  audit_logs
 ```sql
 -- ユーザーの有効なトークン数を取得
 SELECT COUNT(*) FROM tokens
-WHERE user_id = ? AND is_revoked = 0 AND expires_at > datetime('now');
+WHERE userId = ? AND isRevoked = 0 AND expiresAt > datetime('now');
 
 -- 最も古いトークンを取得 (トークン数制限を超えた場合に無効化)
-SELECT token_hash FROM tokens
-WHERE user_id = ? AND is_revoked = 0
-ORDER BY created_at ASC
+SELECT tokenHash FROM tokens
+WHERE userId = ? AND isRevoked = 0
+ORDER BY createdAt ASC
 LIMIT 1;
 ```
 
@@ -152,23 +152,23 @@ LIMIT 1;
 
 ```sql
 -- 7 日以内に有効期限が切れる機密情報を取得
-SELECT user_id, key, expires_at FROM secrets
-WHERE user_id = ?
-  AND expires_at IS NOT NULL
-  AND expires_at > datetime('now')
-  AND expires_at <= datetime('now', '+7 days')
-ORDER BY expires_at ASC;
+SELECT userId, key, expiresAt FROM secrets
+WHERE userId = ?
+  AND expiresAt IS NOT NULL
+  AND expiresAt > datetime('now')
+  AND expiresAt <= datetime('now', '+7 days')
+ORDER BY expiresAt ASC;
 ```
 
 ### 2.4.2 有効期限切れの機密情報を取得
 
 ```sql
 -- 有効期限切れの機密情報を取得
-SELECT user_id, key, expires_at FROM secrets
-WHERE user_id = ?
-  AND expires_at IS NOT NULL
-  AND expires_at <= datetime('now')
-ORDER BY expires_at ASC;
+SELECT userId, key, expiresAt FROM secrets
+WHERE userId = ?
+  AND expiresAt IS NOT NULL
+  AND expiresAt <= datetime('now')
+ORDER BY expiresAt ASC;
 ```
 
 ### 2.4.3 有効期限切れの機密情報を削除
@@ -176,9 +176,9 @@ ORDER BY expires_at ASC;
 ```sql
 -- 有効期限切れの機密情報を削除
 DELETE FROM secrets
-WHERE user_id = ?
-  AND expires_at IS NOT NULL
-  AND expires_at <= datetime('now');
+WHERE userId = ?
+  AND expiresAt IS NOT NULL
+  AND expiresAt <= datetime('now');
 ```
 
 ## 2.5 マイグレーション戦略
@@ -214,12 +214,12 @@ SQLite で十分対応可能なサイズです。
 
 ### 2.7.1 インデックス戦略
 
-- `secrets(user_id)`: ユーザーの機密情報一覧取得で使用
-- `secrets(expires_at)`: 有効期限管理クエリで使用
-- `tokens(user_id, created_at)`: トークン数制限のクエリで使用
-- `audit_logs(user_id, timestamp)`: 監査ログ検索で使用
+- `secrets(userId)`: ユーザーの機密情報一覧取得で使用
+- `secrets(expiresAt)`: 有効期限管理クエリで使用
+- `tokens(userId, createdAt)`: トークン数制限のクエリで使用
+- `auditLogs(userId, timestamp)`: 監査ログ検索で使用
 
 ### 2.7.2 クエリ最適化
 
-- 複合主キー `(user_id, key)` により、キー検索が高速化
-- `expires_at IS NOT NULL` による NULL チェックを追加して、有効期限なしの機密情報をスキャン対象から除外
+- 複合主キー `(userId, key)` により、キー検索が高速化
+- `expiresAt IS NOT NULL` による NULL チェックを追加して、有効期限なしの機密情報をスキャン対象から除外
