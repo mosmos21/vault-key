@@ -303,51 +303,17 @@ export type VaultKeyClientConfig = {
 
 ### 5.1.6 エラークラス
 
+以下のエラークラスを提供:
+
+- `VaultKeyError`: 基底エラークラス
+- `AuthenticationError`: 認証エラー (トークン無効、期限切れなど)
+- `NotFoundError`: リソース未検出エラー
+- `ValidationError`: バリデーションエラー
+- `ConflictError`: 競合エラー (同じキーが既に存在するなど)
+- `ExpiredError`: 有効期限切れエラー
+
+**使用例**:
 ```typescript
-// utils/errors.ts
-export class VaultKeyError extends Error {
-  constructor(message: string) {
-    super(message);
-    this.name = 'VaultKeyError';
-  }
-}
-
-export class AuthenticationError extends VaultKeyError {
-  constructor(message: string = '認証に失敗しました') {
-    super(message);
-    this.name = 'AuthenticationError';
-  }
-}
-
-export class NotFoundError extends VaultKeyError {
-  constructor(message: string = 'リソースが見つかりません') {
-    super(message);
-    this.name = 'NotFoundError';
-  }
-}
-
-export class ValidationError extends VaultKeyError {
-  constructor(message: string) {
-    super(message);
-    this.name = 'ValidationError';
-  }
-}
-
-export class ConflictError extends VaultKeyError {
-  constructor(message: string) {
-    super(message);
-    this.name = 'ConflictError';
-  }
-}
-
-export class ExpiredError extends VaultKeyError {
-  constructor(message: string = 'リソースの有効期限が切れています') {
-    super(message);
-    this.name = 'ExpiredError';
-  }
-}
-
-// 使用例
 try {
   const secret = await client.getSecret({ key: 'nonexistent', token });
 } catch (error) {
@@ -610,56 +576,13 @@ vaultkey --master-key "0123...abcdef" secret get apiKey
 vaultkey --log-level debug secret get apiKey
 ```
 
-## 5.3 CLI の実装例
+## 5.3 CLI の実装方針
 
-```typescript
-// cli.ts
-import { Command } from 'commander';
-import { VaultKeyClient } from './client';
+**使用ライブラリ**: Commander.js
 
-const program = new Command();
-
-program
-  .name('vaultkey')
-  .description('Secure secret management CLI')
-  .version('0.1.0');
-
-// データベース初期化
-program
-  .command('init')
-  .description('データベースを初期化します')
-  .action(async () => {
-    const client = new VaultKeyClient({ databaseUrl: 'sqlite://vaultkey.db' });
-    await client.initialize();
-    console.log('データベースを初期化しました: vaultkey.db');
-  });
-
-// ユーザー登録
-program
-  .command('user register')
-  .option('--username <username>', 'ユーザー名')
-  .action(async (options) => {
-    // Passkey 認証サーバーを起動
-    // ブラウザで登録フローを実行
-  });
-
-// 機密情報取得
-program
-  .command('secret get <key>')
-  .option('--format <format>', '出力フォーマット (json, yaml)', 'table')
-  .action(async (key, options) => {
-    const token = await getToken(); // トークンを取得
-    const client = new VaultKeyClient({ databaseUrl: 'sqlite://vaultkey.db' });
-    const secret = await client.getSecret({ key, token });
-
-    if (options.format === 'json') {
-      console.log(JSON.stringify(secret, null, 2));
-    } else {
-      console.log(`Key: ${secret.key}`);
-      console.log(`Value: ${secret.value}`);
-      console.log(`Created: ${secret.metadata.createdAt}`);
-    }
-  });
-
-program.parse();
-```
+**主要機能**:
+- サブコマンド構造 (`user`, `secret`, `token`, `audit`)
+- グローバルオプション (`--database`, `--master-key`, `--log-level`)
+- 各コマンドのオプション (`--format`, `--pattern`, `--expires-in` など)
+- トークンの優先順位処理 (オプション → 環境変数 → ファイル)
+- 出力フォーマットの切り替え (テーブル、JSON、YAML)

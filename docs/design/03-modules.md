@@ -93,375 +93,72 @@ export class VaultKeyClient {
 
 **責務**: CLI インターフェースの提供
 
-**主要関数**:
-
-```typescript
-// CLI エントリポイント
-export const main = async (): Promise<void> => {
-  // Commander でコマンドを定義
-};
-
-// データベース初期化
-const initCommand = async (): Promise<void> => {
-  // データベースとテーブルを作成
-};
-
-// ユーザー管理コマンド
-const userRegisterCommand = async (username: string): Promise<void> => {
-  // Passkey 認証サーバーを起動
-  // ブラウザで登録フローを実行
-};
-
-const userLoginCommand = async (username: string, options: { manual?: boolean }): Promise<void> => {
-  // Passkey 認証サーバーを起動
-  // デフォルト: ブラウザ自動起動
-  // --manual: 手動コピー方式
-};
-
-// 機密情報管理コマンド
-const secretSetCommand = async (key: string, options: { expiresIn?: string }): Promise<void> => {
-  // 対話的に値を入力 (Phase 3)
-  // VaultKeyClient.storeSecret() を呼び出し
-};
-
-const secretGetCommand = async (key: string, options: { format?: string }): Promise<void> => {
-  // VaultKeyClient.getSecret() を呼び出し
-  // フォーマット変換 (JSON/YAML/テーブル)
-};
-
-const secretDeleteCommand = async (key: string, options: { force?: boolean }): Promise<void> => {
-  // 確認ダイアログ (Phase 3)
-  // VaultKeyClient.deleteSecret() を呼び出し
-};
-
-// 有効期限管理コマンド (Phase 2)
-const secretListExpiringCommand = async (options: { days?: number }): Promise<void> => {
-  // VaultKeyClient.listExpiringSecrets() を呼び出し
-};
-
-const secretCleanupExpiredCommand = async (options: { force?: boolean }): Promise<void> => {
-  // 確認ダイアログ (Phase 3)
-  // VaultKeyClient.deleteExpiredSecrets() を呼び出し
-};
-```
+**主要コマンド**:
+- `init`: データベース初期化
+- `user register`: ユーザー登録
+- `user login`: ユーザー認証・トークン発行
+- `secret set/get/update/delete/list`: 機密情報管理
+- `secret list-expiring/list-expired/cleanup-expired`: 有効期限管理
+- `token revoke/list`: トークン管理
+- `audit search`: 監査ログ検索
 
 ### 3.2.3 crypto モジュール
 
 **責務**: データの暗号化・復号化、ハッシュ化
 
-**主要クラス/関数**:
-
-```typescript
-// encryption.ts
-export const encrypt = (plaintext: string, masterKey: Buffer): EncryptedData => {
-  // AES-256-GCM で暗号化
-  // IV (Initialization Vector) を生成
-  // 暗号化データ + IV + Auth Tag を返却
-};
-
-export const decrypt = (encryptedData: EncryptedData, masterKey: Buffer): string => {
-  // AES-256-GCM で復号化
-  // Auth Tag を検証
-  // 平文を返却
-};
-
-// token-hash.ts
-export const hashToken = (token: string): string => {
-  // SHA-256 でハッシュ化
-  // Hex 文字列で返却
-};
-
-export const generateToken = (): string => {
-  // crypto.randomBytes(32) でランダムトークンを生成
-  // Base64 URL-safe エンコード
-};
-```
+**主要関数**:
+- `encrypt()`: AES-256-GCM で暗号化
+- `decrypt()`: AES-256-GCM で復号化
+- `hashToken()`: SHA-256 でトークンをハッシュ化
+- `generateToken()`: セキュアなランダムトークン生成
 
 ### 3.2.4 auth モジュール
 
 **責務**: ユーザー認証、トークン管理
 
-**主要クラス/関数**:
-
-```typescript
-// passkey.ts
-export class PasskeyService {
-  // Passkey 登録開始
-  generateRegistrationOptions(userId: string, username: string): Promise<PublicKeyCredentialCreationOptions>;
-
-  // Passkey 登録完了
-  verifyRegistrationResponse(response: RegistrationResponseJSON, challenge: string): Promise<VerifiedRegistration>;
-
-  // Passkey 認証開始
-  generateAuthenticationOptions(userId: string): Promise<PublicKeyCredentialRequestOptions>;
-
-  // Passkey 認証完了
-  verifyAuthenticationResponse(response: AuthenticationResponseJSON, challenge: string, publicKey: Buffer): Promise<VerifiedAuthentication>;
-}
-
-// token-manager.ts
-export class TokenManager {
-  // トークン発行
-  issueToken(userId: string, expiresIn: number): Promise<{ token: string; tokenHash: string }>;
-
-  // トークン検証
-  verifyToken(token: string): Promise<string>; // ユーザー ID を返す
-
-  // トークン無効化
-  revokeToken(token: string): Promise<void>;
-
-  // ユーザーのトークン一覧取得
-  listUserTokens(userId: string): Promise<TokenInfo[]>;
-
-  // トークン数制限チェックと古いトークンの無効化
-  private enforceTokenLimit(userId: string): Promise<void>;
-}
-
-// auth-server.ts (Phase 2)
-export class AuthServer {
-  // 認証サーバーを起動
-  start(): Promise<void>;
-
-  // 認証サーバーを停止
-  stop(): Promise<void>;
-
-  // ブラウザを自動起動
-  openBrowser(url: string): Promise<void>;
-}
-```
+**主要クラス**:
+- `PasskeyService`: WebAuthn (Passkey) の登録・認証処理
+- `TokenManager`: トークン発行・検証・無効化、トークン数制限
+- `AuthServer`: 認証サーバーの起動・停止、ブラウザ連携
 
 ### 3.2.5 secrets モジュール
 
 **責務**: 機密情報の CRUD 操作
 
-**主要クラス/関数**:
-
-```typescript
-// secrets-service.ts
-export class SecretsService {
-  // 機密情報取得
-  async getSecret(userId: string, key: string): Promise<Secret> {
-    // ユーザー ID とキーで検索
-    // 有効期限チェック
-    // 復号化
-    // 最終アクセス日時を更新
-  }
-
-  // 機密情報保存
-  async storeSecret(userId: string, key: string, value: string, expiresAt?: Date): Promise<void> {
-    // 暗号化
-    // DB に保存
-  }
-
-  // 機密情報更新
-  async updateSecret(userId: string, key: string, value: string, expiresAt?: Date): Promise<void> {
-    // 存在確認
-    // 暗号化
-    // DB 更新
-    // updated_by, updated_at を更新
-  }
-
-  // 機密情報削除
-  async deleteSecret(userId: string, key: string): Promise<void> {
-    // 存在確認
-    // DB から削除
-  }
-
-  // キー一覧取得
-  async listSecrets(userId: string, pattern?: string): Promise<string[]> {
-    // ユーザーの機密情報一覧を取得
-    // パターンマッチでフィルタリング
-  }
-
-  // 有効期限切れ間近の機密情報一覧 (Phase 2)
-  async listExpiringSecrets(userId: string, daysUntilExpiry: number): Promise<ExpiringSecret[]> {
-    // expires_at が daysUntilExpiry 日以内の機密情報を取得
-  }
-
-  // 有効期限切れの機密情報一覧 (Phase 2)
-  async listExpiredSecrets(userId: string): Promise<ExpiredSecret[]> {
-    // expires_at が現在時刻より前の機密情報を取得
-  }
-
-  // 有効期限切れの機密情報削除 (Phase 2)
-  async deleteExpiredSecrets(userId: string): Promise<number> {
-    // 有効期限切れの機密情報を削除
-    // 削除件数を返す
-  }
-}
-```
+**主要クラス**: `SecretsService`
+- 機密情報の取得・保存・更新・削除
+- 有効期限チェック
+- 最終アクセス日時の更新
 
 ### 3.2.6 audit モジュール
 
 **責務**: 監査ログの記録
 
-**主要クラス/関数**:
-
-```typescript
-// audit-service.ts
-export class AuditService {
-  // 監査ログ記録
-  async log(entry: AuditLogEntry): Promise<void> {
-    // audit_logs テーブルに記録
-  }
-
-  // 監査ログ検索 (Phase 3)
-  async search(userId: string, filters: AuditSearchFilters): Promise<AuditLogEntry[]> {
-    // ユーザー ID、日時範囲、アクション種別でフィルタリング
-  }
-}
-
-export type AuditLogEntry = {
-  userId: string;
-  action: AuditAction;
-  resourceKey?: string;
-  timestamp: Date;
-  success: boolean;
-  errorMessage?: string;
-};
-
-export type AuditAction =
-  | 'get'
-  | 'store'
-  | 'update'
-  | 'delete'
-  | 'list'
-  | 'login'
-  | 'register'
-  | 'list_expiring'
-  | 'list_expired'
-  | 'cleanup_expired';
-```
+**主要クラス**: `AuditService`
+- 監査ログの記録
+- 監査ログの検索 (Phase 3)
 
 ### 3.2.7 database モジュール
 
 **責務**: データベースアクセスの抽象化
 
-**主要クラス/関数**:
-
-```typescript
-// connection.ts
-export class DatabaseConnection {
-  constructor(databaseUrl: string);
-
-  // データベース接続取得
-  getConnection(): Database;
-
-  // マイグレーション実行
-  async runMigrations(): Promise<void>;
-
-  // 接続クローズ
-  close(): void;
-}
-
-// repositories/user-repository.ts
-export class UserRepository {
-  // ユーザー作成
-  async create(user: UserData): Promise<void>;
-
-  // ユーザー ID で検索
-  async findById(userId: string): Promise<User | null>;
-
-  // ユーザー名で検索
-  async findByUsername(username: string): Promise<User | null>;
-
-  // Credential ID で検索
-  async findByCredentialId(credentialId: string): Promise<User | null>;
-}
-
-// repositories/secret-repository.ts
-export class SecretRepository {
-  // 機密情報作成
-  async create(secret: SecretData): Promise<void>;
-
-  // ユーザー ID とキーで検索
-  async findByUserAndKey(userId: string, key: string): Promise<Secret | null>;
-
-  // ユーザー ID で一覧取得
-  async findByUserId(userId: string): Promise<Secret[]>;
-
-  // 有効期限切れ間近の機密情報を取得
-  async findExpiringByUserId(userId: string, daysUntilExpiry: number): Promise<Secret[]>;
-
-  // 有効期限切れの機密情報を取得
-  async findExpiredByUserId(userId: string): Promise<Secret[]>;
-
-  // 有効期限切れの機密情報を削除
-  async deleteExpiredByUserId(userId: string): Promise<number>;
-
-  // 機密情報更新
-  async update(userId: string, key: string, updates: Partial<SecretData>): Promise<void>;
-
-  // 機密情報削除
-  async delete(userId: string, key: string): Promise<void>;
-}
-
-// repositories/token-repository.ts
-export class TokenRepository {
-  // トークン作成
-  async create(token: TokenData): Promise<void>;
-
-  // トークンハッシュで検索
-  async findByHash(tokenHash: string): Promise<Token | null>;
-
-  // ユーザー ID で有効なトークン一覧を取得
-  async findValidByUserId(userId: string): Promise<Token[]>;
-
-  // ユーザー ID で有効なトークン数を取得
-  async countValidByUserId(userId: string): Promise<number>;
-
-  // 最も古いトークンを取得
-  async findOldestByUserId(userId: string): Promise<Token | null>;
-
-  // トークン無効化
-  async revoke(tokenHash: string): Promise<void>;
-}
-
-// repositories/audit-repository.ts
-export class AuditRepository {
-  // 監査ログ記録
-  async create(entry: AuditLogEntry): Promise<void>;
-
-  // ユーザー ID で検索
-  async findByUserId(userId: string, filters: AuditSearchFilters): Promise<AuditLogEntry[]>;
-}
-```
+**主要クラス**:
+- `DatabaseConnection`: DB 接続管理、マイグレーション実行
+- `UserRepository`: users テーブルへのアクセス
+- `SecretRepository`: secrets テーブルへのアクセス
+- `TokenRepository`: tokens テーブルへのアクセス
+- `AuditRepository`: audit_logs テーブルへのアクセス
 
 ### 3.2.8 utils モジュール
 
 **責務**: エラークラス、バリデーション、対話的入力
 
 **主要クラス/関数**:
-
-```typescript
-// errors.ts
-export class VaultKeyError extends Error {}
-export class AuthenticationError extends VaultKeyError {}
-export class PermissionError extends VaultKeyError {}
-export class NotFoundError extends VaultKeyError {}
-export class ValidationError extends VaultKeyError {}
-export class ConflictError extends VaultKeyError {}
-export class ExpiredError extends VaultKeyError {}
-
-// validators.ts
-export const validateKey = (key: string): void => {
-  // キー名のバリデーション
-};
-
-export const validateToken = (token: string): void => {
-  // トークンのバリデーション
-};
-
-// prompt.ts (Phase 3)
-export const promptPassword = async (message: string): Promise<string> => {
-  // 対話的にパスワード入力を受け付ける
-  // マスク表示
-};
-
-export const promptConfirm = async (message: string): Promise<boolean> => {
-  // 確認ダイアログを表示
-};
-```
+- エラークラス: `VaultKeyError`, `AuthenticationError`, `NotFoundError`, `ValidationError`, `ConflictError`, `ExpiredError`
+- `validateKey()`: キー名のバリデーション
+- `validateToken()`: トークンのバリデーション
+- `promptPassword()`: 対話的パスワード入力 (Phase 3)
+- `promptConfirm()`: 確認ダイアログ (Phase 3)
 
 ## 3.3 モジュール間の依存関係
 

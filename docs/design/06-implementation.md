@@ -84,13 +84,6 @@
 - 軽量、高速
 - トランザクション対応
 
-**接続例**:
-```typescript
-import Database from 'better-sqlite3';
-
-const db = new Database('vaultkey.db');
-```
-
 ### 6.3.2 本番環境: PostgreSQL (pg)
 
 **特徴**:
@@ -98,15 +91,6 @@ const db = new Database('vaultkey.db');
 - 非同期 API
 - スケーラブル
 - トランザクション、コネクションプール対応
-
-**接続例**:
-```typescript
-import { Pool } from 'pg';
-
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-});
-```
 
 ## 6.4 パッケージ設定
 
@@ -197,44 +181,21 @@ const pool = new Pool({
 
 ### 6.4.3 tsup.config.ts
 
-```typescript
-import { defineConfig } from 'tsup';
-
-export default defineConfig({
-  entry: ['src/index.ts', 'src/cli.ts'],
-  format: ['esm'],
-  dts: true,
-  splitting: false,
-  sourcemap: true,
-  clean: true,
-  shims: true,
-  minify: false,
-  treeshake: true,
-});
-```
+**主要設定**:
+- エントリポイント: `src/index.ts`, `src/cli.ts`
+- フォーマット: ESM
+- 型定義ファイル (`.d.ts`) 生成
+- ソースマップ生成
+- Tree shaking 有効化
 
 ### 6.4.4 vitest.config.ts
 
-```typescript
-import { defineConfig } from 'vitest/config';
-
-export default defineConfig({
-  test: {
-    globals: true,
-    environment: 'node',
-    coverage: {
-      provider: 'v8',
-      reporter: ['text', 'json', 'html'],
-      exclude: [
-        'node_modules/**',
-        'dist/**',
-        'tests/**',
-        '**/*.test.ts',
-      ],
-    },
-  },
-});
-```
+**主要設定**:
+- テスト環境: Node.js
+- グローバル変数の有効化
+- カバレッジプロバイダー: v8
+- カバレッジレポート形式: text, json, html
+- 除外ディレクトリ: node_modules, dist, tests
 
 ### 6.4.5 .eslintrc.json
 
@@ -413,101 +374,33 @@ vaultkey --help
 
 ## 6.8 CI/CD 設定 (Phase 4)
 
-### 6.8.1 GitHub Actions ワークフロー例
+### 6.8.1 GitHub Actions ワークフロー
 
-```yaml
-# .github/workflows/ci.yml
-name: CI
+**実行トリガー**:
+- main ブランチへの push
+- Pull Request
 
-on:
-  push:
-    branches: [main]
-  pull_request:
-    branches: [main]
-
-jobs:
-  test:
-    runs-on: ubuntu-latest
-
-    steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-node@v3
-        with:
-          node-version: '18'
-      - run: npm ci
-      - run: npm run typecheck
-      - run: npm run lint
-      - run: npm run test:coverage
-      - uses: codecov/codecov-action@v3
-        with:
-          files: ./coverage/coverage-final.json
-```
+**実行内容**:
+- 依存関係のインストール
+- 型チェック (`npm run typecheck`)
+- Lint チェック (`npm run lint`)
+- テスト実行とカバレッジ計測 (`npm run test:coverage`)
+- カバレッジレポートのアップロード (Codecov)
 
 ## 6.9 ドキュメント生成 (Phase 4)
 
 ### 6.9.1 TypeDoc による API ドキュメント生成
 
-```bash
-# TypeDoc をインストール
-npm install --save-dev typedoc
+TypeDoc を使用して API ドキュメントを自動生成:
+- ソース: `src/index.ts`
+- 出力先: `docs/api/`
 
-# ドキュメント生成
-npx typedoc --out docs/api src/index.ts
-```
+### 6.9.2 README.md
 
-### 6.9.2 README.md のテンプレート
-
-```markdown
-# VaultKey
-
-Secure secret management library with Passkey authentication
-
-## Features
-
-- Passkey (WebAuthn) authentication
-- AES-256-GCM encryption
-- TypeScript library and CLI
-- SQLite and PostgreSQL support
-
-## Installation
-
-```bash
-npm install -g vaultkey
-```
-
-## Usage
-
-### CLI
-
-```bash
-# Initialize database
-vaultkey init
-
-# Register user
-vaultkey user register --username alice
-
-# Login
-vaultkey user login --username alice
-
-# Store secret
-vaultkey secret set apiKey "sk-1234567890abcdef"
-
-# Get secret
-vaultkey secret get apiKey
-```
-
-### Library
-
-```typescript
-import { VaultKeyClient } from 'vaultkey';
-
-const client = new VaultKeyClient({ databaseUrl: 'sqlite://vaultkey.db' });
-
-const secret = await client.getSecret({ key: 'apiKey', token });
-console.log(secret.value);
-```
-
-## License
-
-MIT
-```
+以下の内容を含む:
+- プロジェクト概要
+- 主要機能 (Passkey 認証、AES-256-GCM 暗号化など)
+- インストール方法
+- CLI の使用例
+- ライブラリ API の使用例
+- ライセンス情報

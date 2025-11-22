@@ -161,24 +161,12 @@ secrets テーブル:
 
 ### 1.3.3 アクセス制御フロー
 
-```typescript
-// 機密情報取得時
-const getSecret = async (key: string, token: string) => {
-  // 1. トークンからユーザー ID を取得
-  const userId = await tokenManager.verifyToken(token);
-
-  // 2. ユーザー ID とキーで機密情報を検索
-  const secret = await secretRepository.findByUserAndKey(userId, key);
-
-  // 3. 機密情報が見つからない場合はエラー
-  if (!secret) {
-    throw new NotFoundError('機密情報が見つかりません');
-  }
-
-  // 4. 復号化して返却
-  return decrypt(secret.encrypted_value);
-};
-```
+機密情報取得時のアクセス制御:
+1. トークンを検証してユーザー ID を取得
+2. ユーザー ID とキーで機密情報を検索
+3. 機密情報が見つからない場合はエラー
+4. 所有権チェック (user_id 一致確認)
+5. 復号化して返却
 
 ## 1.4 有効期限管理アーキテクチャ
 
@@ -188,19 +176,13 @@ const getSecret = async (key: string, token: string) => {
 - 有効期限なしの機密情報は `expires_at = NULL`
 
 ### 1.4.2 有効期限チェックフロー
-```typescript
-const getSecret = async (key: string, token: string) => {
-  const userId = await tokenManager.verifyToken(token);
-  const secret = await secretRepository.findByUserAndKey(userId, key);
 
-  // 有効期限チェック
-  if (secret.expires_at && new Date() > new Date(secret.expires_at)) {
-    throw new ExpiredError('機密情報の有効期限が切れています');
-  }
-
-  return decrypt(secret.encrypted_value);
-};
-```
+機密情報取得時に有効期限をチェック:
+1. トークンを検証してユーザー ID を取得
+2. ユーザー ID とキーで機密情報を検索
+3. 有効期限が設定されている場合、現在時刻と比較
+4. 有効期限が切れている場合はエラー
+5. 有効期限内の場合は復号化して返却
 
 ### 1.4.3 有効期限管理コマンド
 ```bash

@@ -14,45 +14,16 @@
 
 **暗号化フロー**:
 
-```typescript
-export const encrypt = (plaintext: string, masterKey: Buffer): EncryptedData => {
-  // 1. IV をランダム生成
-  const iv = crypto.randomBytes(12);
-
-  // 2. AES-256-GCM で暗号化
-  const cipher = crypto.createCipheriv('aes-256-gcm', masterKey, iv);
-  const encrypted = Buffer.concat([cipher.update(plaintext, 'utf8'), cipher.final()]);
-
-  // 3. Auth Tag を取得
-  const authTag = cipher.getAuthTag();
-
-  // 4. IV + Auth Tag + 暗号化データを返却
-  return {
-    iv: iv.toString('base64'),
-    authTag: authTag.toString('base64'),
-    encrypted: encrypted.toString('base64'),
-  };
-};
-```
+1. IV (Initialization Vector) をランダム生成
+2. AES-256-GCM で暗号化
+3. Auth Tag (認証タグ) を取得
+4. IV + Auth Tag + 暗号化データを Base64 エンコードして返却
 
 **復号化フロー**:
 
-```typescript
-export const decrypt = (encryptedData: EncryptedData, masterKey: Buffer): string => {
-  // 1. Base64 デコード
-  const iv = Buffer.from(encryptedData.iv, 'base64');
-  const authTag = Buffer.from(encryptedData.authTag, 'base64');
-  const encrypted = Buffer.from(encryptedData.encrypted, 'base64');
-
-  // 2. AES-256-GCM で復号化
-  const decipher = crypto.createDecipheriv('aes-256-gcm', masterKey, iv);
-  decipher.setAuthTag(authTag);
-
-  // 3. 平文を返却
-  const decrypted = Buffer.concat([decipher.update(encrypted), decipher.final()]);
-  return decrypted.toString('utf8');
-};
-```
+1. Base64 エンコードされたデータをデコード
+2. AES-256-GCM で復号化 (Auth Tag で改ざん検証)
+3. 平文を返却
 
 ### 4.1.2 マスターキーの管理
 
@@ -90,58 +61,22 @@ openssl rand -hex 32
 
 **トークン生成フロー**:
 
-```typescript
-export const generateToken = (): string => {
-  // 1. ランダムバイト列を生成
-  const randomBytes = crypto.randomBytes(32);
-
-  // 2. Base64 URL-safe エンコード
-  return randomBytes.toString('base64url');
-};
-```
+1. `crypto.randomBytes(32)` でランダムバイト列を生成
+2. Base64 URL-safe エンコード
 
 **トークンハッシュ化フロー**:
 
-```typescript
-export const hashToken = (token: string): string => {
-  // 1. SHA-256 でハッシュ化
-  const hash = crypto.createHash('sha256');
-  hash.update(token);
-
-  // 2. Hex 文字列で返却
-  return hash.digest('hex');
-};
-```
+1. SHA-256 でハッシュ化
+2. Hex 文字列として返却
 
 **検証フロー**:
 
-```typescript
-export const verifyToken = async (token: string): Promise<string> => {
-  // 1. トークンをハッシュ化
-  const tokenHash = hashToken(token);
-
-  // 2. DB からトークン情報を取得
-  const tokenData = await tokenRepository.findByHash(tokenHash);
-
-  // 3. トークンが存在しない場合はエラー
-  if (!tokenData) {
-    throw new AuthenticationError('トークンが無効です');
-  }
-
-  // 4. 有効期限チェック
-  if (new Date() > new Date(tokenData.expiresAt)) {
-    throw new AuthenticationError('トークンの有効期限が切れています');
-  }
-
-  // 5. 無効化チェック
-  if (tokenData.isRevoked) {
-    throw new AuthenticationError('トークンは無効化されています');
-  }
-
-  // 6. ユーザー ID を返す
-  return tokenData.userId;
-};
-```
+1. トークンを SHA-256 でハッシュ化
+2. DB からトークン情報を取得
+3. トークンの存在確認
+4. 有効期限チェック
+5. 無効化チェック (`is_revoked` フラグ)
+6. ユーザー ID を返却
 
 ## 4.2 認証設計 (WebAuthn)
 
@@ -155,121 +90,68 @@ VaultKey は **Passkey (WebAuthn)** による強固な多要素認証を実装�
 
 ### 4.2.2 登録フロー
 
-```typescript
-// 1. 登録開始
-const registrationOptions = generateRegistrationOptions({
-  rpID: 'localhost', // Relying Party ID (本番環境ではドメイン名)
-  rpName: 'VaultKey',
-  userID: userId,
-  userName: username,
-  challenge: generateChallenge(), // ランダムチャレンジ
-  attestationType: 'none', // 認証器の証明は不要
-  authenticatorSelection: {
-    residentKey: 'preferred', // デバイスに Passkey を保存
-    userVerification: 'preferred', // 生体認証を推奨
-  },
-});
+1. 登録オプション生成
+   - Relying Party ID: 'localhost' (本番環境ではドメイン名)
+   - Relying Party Name: 'VaultKey'
+   - ユーザー ID とユーザー名
+   - ランダムチャレンジの生成
+   - Attestation Type: 'none' (認証器の証明は不要)
+   - Authenticator Selection:
+     - residentKey: 'preferred' (デバイスに Passkey を保存)
+     - userVerification: 'preferred' (生体認証を推奨)
 
-// 2. クライアントで Passkey 作成 (ブラウザ/CLI)
-// navigator.credentials.create() を使用
+2. クライアントで Passkey 作成 (ブラウザ/CLI)
+   - `navigator.credentials.create()` を使用
 
-// 3. 登録完了
-const verification = await verifyRegistrationResponse({
-  response: clientResponse,
-  expectedChallenge: challenge,
-  expectedOrigin: 'http://localhost:5000',
-});
+3. 登録レスポンスの検証
+   - チャレンジの一致確認
+   - オリジンの検証
 
-// 4. 公開鍵を DB に保存
-await userRepository.create({
-  userId,
-  username,
-  credentialId: verification.registrationInfo.credentialID,
-  publicKey: verification.registrationInfo.credentialPublicKey,
-});
-```
+4. 公開鍵を DB に保存
+   - user_id, username, credential_id, public_key を保存
 
 ### 4.2.3 認証フロー
 
-```typescript
-// 1. 認証開始
-const authenticationOptions = generateAuthenticationOptions({
-  rpID: 'localhost',
-  challenge: generateChallenge(),
-  allowCredentials: [
-    {
-      id: user.credentialId,
-      type: 'public-key',
-    },
-  ],
-  userVerification: 'preferred',
-});
+1. 認証オプション生成
+   - Relying Party ID: 'localhost'
+   - ランダムチャレンジの生成
+   - 許可する認証情報リスト (credential_id, type: 'public-key')
+   - userVerification: 'preferred'
 
-// 2. クライアントで署名 (ブラウザ/CLI)
-// navigator.credentials.get() を使用
+2. クライアントで署名 (ブラウザ/CLI)
+   - `navigator.credentials.get()` を使用
 
-// 3. 認証完了
-const verification = await verifyAuthenticationResponse({
-  response: clientResponse,
-  expectedChallenge: challenge,
-  expectedOrigin: 'http://localhost:5000',
-  authenticator: {
-    credentialID: user.credentialId,
-    credentialPublicKey: user.publicKey,
-    counter: 0, // Phase 1 ではカウンターは使用しない
-  },
-});
+3. 認証レスポンスの検証
+   - チャレンジの一致確認
+   - オリジンの検証
+   - 公開鍵を使った署名検証
+   - カウンター検証 (Phase 1 では使用しない)
 
-// 4. トークン発行
-const { token } = await tokenManager.issueToken(userId, 3600); // 1 時間
-```
+4. トークン発行
+   - デフォルト有効期限: 1 時間
 
 ### 4.2.4 認証 UX の実装
 
 #### ブラウザ自動起動方式 (デフォルト)
 
-```typescript
-// CLI から認証サーバーを起動
-const authServer = new AuthServer();
-await authServer.start(); // http://localhost:5000 で起動
-
-// ブラウザを自動起動
-await authServer.openBrowser('http://localhost:5000/login?userId=alice');
-
-// ブラウザで Passkey 認証を実行
-// 認証成功後、トークンを CLI に返却
-const token = await authServer.waitForToken();
-
-// トークンを ~/.vaultkey/token に保存
-await saveToken(token);
-
-// 認証サーバーを停止
-await authServer.stop();
-```
+1. CLI から認証サーバーを起動 (`http://localhost:5000`)
+2. ブラウザを自動起動して認証ページを開く
+3. ブラウザで Passkey 認証を実行
+4. 認証成功後、トークンを CLI に返却
+5. トークンを `~/.vaultkey/token` に保存
+6. 認証サーバーを停止
 
 #### 手動コピー方式 (WSL など)
 
-```typescript
-// CLI から認証サーバーを起動
-const authServer = new AuthServer();
-await authServer.start(); // http://localhost:5000 で起動
-
-// 認証 URL を CLI に表示
-console.log('以下の URL をブラウザで開いてください:');
-console.log('http://localhost:5000/login?userId=alice');
-
-// ブラウザで Passkey 認証を実行
-// 認証成功後、トークンをブラウザに表示
-
-// CLI でトークンを入力
-const token = await promptPassword('トークンを貼り付けてください:');
-
-// トークンを ~/.vaultkey/token に保存
-await saveToken(token);
-
-// 認証サーバーを停止
-await authServer.stop();
-```
+1. CLI から認証サーバーを起動 (`http://localhost:5000`)
+2. 認証 URL を CLI に表示
+3. ユーザーが手動でブラウザを開いて URL にアクセス
+4. ブラウザで Passkey 認証を実行
+5. 認証成功後、トークンをブラウザに表示
+6. ユーザーがトークンをコピー
+7. CLI にトークンを貼り付け
+8. トークンを `~/.vaultkey/token` に保存
+9. 認証サーバーを停止
 
 ## 4.3 認可設計
 
@@ -283,34 +165,14 @@ VaultKey は**ユーザーごとに完全に分離された権限モデル**を�
 
 ### 4.3.2 アクセス制御フロー
 
-```typescript
-// 機密情報取得時のアクセス制御
-export const getSecret = async (key: string, token: string) => {
-  // 1. トークンを検証してユーザー ID を取得
-  const userId = await tokenManager.verifyToken(token);
+機密情報取得時のアクセス制御:
 
-  // 2. ユーザー ID とキーで機密情報を検索
-  const secret = await secretRepository.findByUserAndKey(userId, key);
-
-  // 3. 機密情報が見つからない場合はエラー
-  if (!secret) {
-    throw new NotFoundError('機密情報が見つかりません');
-  }
-
-  // 4. 所有権チェック (user_id 一致確認)
-  if (secret.userId !== userId) {
-    throw new PermissionError('この機密情報にアクセスする権限がありません');
-  }
-
-  // 5. 有効期限チェック
-  if (secret.expiresAt && new Date() > new Date(secret.expiresAt)) {
-    throw new ExpiredError('機密情報の有効期限が切れています');
-  }
-
-  // 6. 復号化して返却
-  return decrypt(secret.encryptedValue);
-};
-```
+1. トークンを検証してユーザー ID を取得
+2. ユーザー ID とキーで機密情報を検索
+3. 機密情報が見つからない場合はエラー
+4. 所有権チェック (user_id 一致確認)
+5. 有効期限チェック (`expires_at`)
+6. 復号化して返却
 
 ### 4.3.3 データベースレベルの分離
 
@@ -390,41 +252,23 @@ CREATE TABLE secrets (
 
 ### 4.5.2 エラーメッセージの設計
 
-```typescript
-// Good: 機密情報を含まない
-throw new NotFoundError('機密情報が見つかりません');
+**適切なエラーメッセージ**:
+- 機密情報を含まない汎用的なメッセージ
+- 例: '機密情報が見つかりません'
+- 例: 'トークンが無効です'
 
-// Bad: キー名を含む
-throw new NotFoundError(`機密情報 '${key}' が見つかりません`);
-
-// Good: ユーザー ID を含まない
-throw new AuthenticationError('トークンが無効です');
-
-// Bad: ユーザー ID を含む
-throw new AuthenticationError(`ユーザー ${userId} のトークンが無効です`);
-```
+**不適切なエラーメッセージ**:
+- キー名、ユーザー ID、トークンなどの具体的な値を含むメッセージ
+- 例: '機密情報 "api_key" が見つかりません' (NG)
+- 例: 'ユーザー user123 のトークンが無効です' (NG)
 
 ### 4.5.3 メモリ上の機密情報の破棄
 
-```typescript
-// 機密情報を使用後速やかに破棄
-const getSecret = async (key: string, token: string) => {
-  let plaintext: string | null = null;
+機密情報を使用後速やかに破棄する方針:
 
-  try {
-    // 復号化
-    plaintext = decrypt(encryptedValue);
-
-    // 使用
-    return { key, value: plaintext };
-  } finally {
-    // メモリから削除
-    if (plaintext) {
-      plaintext = null;
-    }
-  }
-};
-```
+- 復号化された機密情報は必要最小限の期間のみメモリに保持
+- 使用後は速やかに参照を削除 (null 代入など)
+- try-finally ブロックで確実に破棄処理を実行
 
 ### 4.5.4 データベースファイルのアクセス権限
 

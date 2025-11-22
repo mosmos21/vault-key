@@ -96,28 +96,11 @@ export default class VaultKeyClient {
 
 ### 7.1.5 エラーハンドリング
 
-**すべてのエラーを適切にキャッチして処理**:
-
-```typescript
-// Good
-export const getSecret = async (key: string, token: string) => {
-  try {
-    const userId = await tokenManager.verifyToken(token);
-    const secret = await secretRepository.findByUserAndKey(userId, key);
-
-    if (!secret) {
-      throw new NotFoundError('機密情報が見つかりません');
-    }
-
-    return decrypt(secret.encryptedValue);
-  } catch (error) {
-    if (error instanceof VaultKeyError) {
-      throw error;
-    }
-    throw new VaultKeyError(`機密情報の取得に失敗しました: ${error.message}`);
-  }
-};
-```
+**基本方針**:
+- すべてのエラーを適切にキャッチして処理
+- カスタムエラークラス (`VaultKeyError` など) を使用
+- エラーの再スローは適切に判断 (カスタムエラーはそのまま、それ以外はラップ)
+- エラーメッセージに機密情報を含めない
 
 ### 7.1.6 コメント
 
@@ -152,133 +135,47 @@ npm run lint
 
 ### 7.2.1 ユニットテスト
 
-**すべてのビジネスロジックをカバー (カバレッジ 80% 以上)**:
+**目標**: すべてのビジネスロジックをカバー (カバレッジ 80% 以上)
 
-```typescript
-// tests/secrets-service.test.ts
-import { describe, it, expect, beforeEach } from 'vitest';
-import { SecretsService } from '../src/secrets/secrets-service';
-import { NotFoundError, ExpiredError } from '../src/utils/errors';
+**テスト対象**:
+- 各サービスクラスのメソッド
+- 暗号化・復号化処理
+- トークン管理
+- バリデーション処理
 
-describe('SecretsService', () => {
-  let service: SecretsService;
-
-  beforeEach(() => {
-    service = new SecretsService({
-      databaseUrl: ':memory:',
-      masterKey: 'test-key',
-    });
-  });
-
-  it('should store and get secret', async () => {
-    await service.storeSecret('user1', 'testKey', 'testValue');
-    const secret = await service.getSecret('user1', 'testKey');
-
-    expect(secret.value).toBe('testValue');
-  });
-
-  it('should throw NotFoundError when key does not exist', async () => {
-    await expect(
-      service.getSecret('user1', 'nonexistent')
-    ).rejects.toThrow(NotFoundError);
-  });
-
-  it('should throw ExpiredError when secret is expired', async () => {
-    const expiresAt = new Date(Date.now() - 1000); // 1 秒前
-    await service.storeSecret('user1', 'testKey', 'testValue', expiresAt);
-
-    await expect(
-      service.getSecret('user1', 'testKey')
-    ).rejects.toThrow(ExpiredError);
-  });
-});
-```
+**テストケース例**:
+- 正常系: 機密情報の保存と取得
+- 異常系: キーが存在しない場合の `NotFoundError`
+- 異常系: 有効期限切れの場合の `ExpiredError`
 
 ### 7.2.2 統合テスト
 
-**データベースを含む E2E テスト (テスト用 SQLite を使用)**:
+**目標**: データベースを含む E2E テスト
 
-```typescript
-// tests/client.test.ts
-import { describe, it, expect, beforeEach } from 'vitest';
-import { VaultKeyClient } from '../src/client';
+**使用するデータベース**: テスト用 SQLite (`:memory:`)
 
-describe('VaultKeyClient (integration)', () => {
-  let client: VaultKeyClient;
-  let adminToken: string;
-
-  beforeEach(async () => {
-    client = new VaultKeyClient({ databaseUrl: ':memory:' });
-    await client.initialize();
-
-    // テスト用のユーザーとトークンを作成
-    adminToken = await setupTestUser(client, 'admin');
-  });
-
-  it('should store and get secret', async () => {
-    await client.storeSecret({
-      key: 'testKey',
-      value: 'testValue',
-      token: adminToken,
-    });
-
-    const secret = await client.getSecret({ key: 'testKey', token: adminToken });
-    expect(secret.value).toBe('testValue');
-  });
-});
-```
+**テストケース例**:
+- VaultKeyClient を使った機密情報の保存・取得
+- ユーザー認証フロー
+- トークン管理フロー
 
 ### 7.2.3 CLI テスト
 
-**Commander コマンドのテスト**:
+**使用ライブラリ**: `execa` (コマンド実行)
 
-```typescript
-// tests/cli.test.ts
-import { describe, it, expect } from 'vitest';
-import { execa } from 'execa';
-
-describe('CLI', () => {
-  it('should initialize database', async () => {
-    const { stdout, exitCode } = await execa('node', ['dist/cli.js', 'init']);
-
-    expect(exitCode).toBe(0);
-    expect(stdout).toContain('データベースを初期化しました');
-  });
-
-  it('should show help', async () => {
-    const { stdout, exitCode } = await execa('node', ['dist/cli.js', '--help']);
-
-    expect(exitCode).toBe(0);
-    expect(stdout).toContain('Usage:');
-  });
-});
-```
+**テストケース例**:
+- `vaultkey init` コマンドの実行
+- `vaultkey --help` のヘルプ表示
+- 各サブコマンドの実行と出力確認
 
 ### 7.2.4 モック
 
-**外部依存をモック化**:
+**使用ライブラリ**: Vitest の `vi.fn()`
 
-```typescript
-// tests/token-manager.test.ts
-import { describe, it, expect, vi } from 'vitest';
-import { TokenManager } from '../src/auth/token-manager';
-
-describe('TokenManager', () => {
-  it('should issue token', async () => {
-    const mockRepository = {
-      create: vi.fn(),
-      findByHash: vi.fn(),
-      countValidByUserId: vi.fn().mockResolvedValue(0),
-    };
-
-    const tokenManager = new TokenManager(mockRepository);
-    const { token } = await tokenManager.issueToken('user1', 3600);
-
-    expect(token).toBeDefined();
-    expect(mockRepository.create).toHaveBeenCalled();
-  });
-});
-```
+**モック対象**:
+- データベース Repository
+- 外部 API クライアント
+- ファイルシステム操作
 
 ### 7.2.5 テスト実行
 
@@ -315,38 +212,24 @@ npm test -- --watch
 
 **構造化ログ (JSON 形式)**:
 
-```typescript
-const logger = {
-  log: (level: string, message: string, context?: Record<string, unknown>) => {
-    console.log(
-      JSON.stringify({
-        timestamp: new Date().toISOString(),
-        level,
-        message,
-        context,
-      })
-    );
-  },
-};
+各ログエントリは以下のフィールドを含む:
+- `timestamp`: ISO 8601 形式のタイムスタンプ
+- `level`: ログレベル (DEBUG, INFO, WARNING, ERROR, CRITICAL)
+- `message`: ログメッセージ
+- `context`: コンテキスト情報 (オプション)
 
-// 使用例
-logger.log('INFO', '機密情報を取得しました', {
-  userId: 'user123',
-  key: 'apiKeyOpenai',
-  action: 'getSecret',
-});
-
-// 出力:
-// {
-//   "timestamp": "2025-01-22T10:00:00.000Z",
-//   "level": "INFO",
-//   "message": "機密情報を取得しました",
-//   "context": {
-//     "userId": "user123",
-//     "key": "apiKeyOpenai",
-//     "action": "getSecret"
-//   }
-// }
+**出力例**:
+```json
+{
+  "timestamp": "2025-01-22T10:00:00.000Z",
+  "level": "INFO",
+  "message": "機密情報を取得しました",
+  "context": {
+    "userId": "user123",
+    "key": "apiKeyOpenai",
+    "action": "getSecret"
+  }
+}
 ```
 
 ### 7.3.3 機密情報の取り扱い
@@ -361,100 +244,27 @@ logger.log('INFO', '機密情報を取得しました', {
 - ユーザー ID、キー名、アクション種別、タイムスタンプ
 - エラーメッセージ (機密情報を含まない)
 
-### 7.3.4 ログ実装例
+### 7.3.4 Logger クラスの設計
 
-```typescript
-// utils/logger.ts
-export type LogLevel = 'DEBUG' | 'INFO' | 'WARNING' | 'ERROR' | 'CRITICAL';
-
-export class Logger {
-  private level: LogLevel;
-
-  constructor(level: LogLevel = 'INFO') {
-    this.level = level;
-  }
-
-  private shouldLog(level: LogLevel): boolean {
-    const levels = ['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'];
-    return levels.indexOf(level) >= levels.indexOf(this.level);
-  }
-
-  log(level: LogLevel, message: string, context?: Record<string, unknown>) {
-    if (!this.shouldLog(level)) return;
-
-    console.log(
-      JSON.stringify({
-        timestamp: new Date().toISOString(),
-        level,
-        message,
-        context,
-      })
-    );
-  }
-
-  debug(message: string, context?: Record<string, unknown>) {
-    this.log('DEBUG', message, context);
-  }
-
-  info(message: string, context?: Record<string, unknown>) {
-    this.log('INFO', message, context);
-  }
-
-  warn(message: string, context?: Record<string, unknown>) {
-    this.log('WARNING', message, context);
-  }
-
-  error(message: string, context?: Record<string, unknown>) {
-    this.log('ERROR', message, context);
-  }
-
-  critical(message: string, context?: Record<string, unknown>) {
-    this.log('CRITICAL', message, context);
-  }
-}
-
-// 使用例
-const logger = new Logger(process.env.LOG_LEVEL as LogLevel);
-
-logger.info('機密情報を取得しました', {
-  userId: 'user123',
-  key: 'apiKeyOpenai',
-  action: 'getSecret',
-});
-```
+**主要機能**:
+- ログレベルによるフィルタリング
+- 構造化ログの出力 (JSON 形式)
+- レベル別のメソッド (`debug`, `info`, `warn`, `error`, `critical`)
+- 環境変数 `LOG_LEVEL` によるログレベル設定
 
 ## 7.4 デバッグ
 
 ### 7.4.1 デバッグツール
 
-**VS Code デバッグ設定 (`.vscode/launch.json`)**:
+**VS Code デバッグ設定**:
 
-```json
-{
-  "version": "0.2.0",
-  "configurations": [
-    {
-      "type": "node",
-      "request": "launch",
-      "name": "Debug CLI",
-      "skipFiles": ["<node_internals>/**"],
-      "program": "${workspaceFolder}/src/cli.ts",
-      "args": ["secret", "get", "testKey"],
-      "runtimeArgs": ["--loader", "tsx"],
-      "console": "integratedTerminal"
-    },
-    {
-      "type": "node",
-      "request": "launch",
-      "name": "Debug Tests",
-      "skipFiles": ["<node_internals>/**"],
-      "program": "${workspaceFolder}/node_modules/vitest/vitest.mjs",
-      "args": ["--run"],
-      "console": "integratedTerminal"
-    }
-  ]
-}
-```
+`.vscode/launch.json` に以下のデバッグ設定を用意:
+- **Debug CLI**: CLI コマンドのデバッグ実行
+  - tsx ローダーを使用
+  - コマンドライン引数を指定可能
+- **Debug Tests**: テストのデバッグ実行
+  - Vitest を使用
+  - 統合ターミナルで実行
 
 ### 7.4.2 デバッグ用環境変数
 
@@ -547,25 +357,12 @@ Closes #123
 
 **JSDoc でクラスと関数を説明**:
 
-```typescript
-/**
- * 機密情報を管理するサービス
- */
-export class SecretsService {
-  /**
-   * 機密情報を取得する
-   *
-   * @param userId - ユーザー ID
-   * @param key - 機密情報のキー
-   * @returns 復号化された機密情報
-   * @throws {NotFoundError} キーが見つからない場合
-   * @throws {ExpiredError} 機密情報の有効期限が切れている場合
-   */
-  async getSecret(userId: string, key: string): Promise<Secret> {
-    // ...
-  }
-}
-```
+クラスと公開関数には JSDoc を記述:
+- クラスの概要
+- 関数の説明
+- パラメータの説明 (`@param`)
+- 返り値の説明 (`@returns`)
+- スローされるエラー (`@throws`)
 
 ### 7.7.2 README.md
 

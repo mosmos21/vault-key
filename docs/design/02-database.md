@@ -29,12 +29,6 @@ CREATE INDEX idx_secrets_expires_at ON secrets(expires_at);
 CREATE INDEX idx_secrets_last_accessed_at ON secrets(last_accessed_at);
 ```
 
-**変更点**:
-- `PRIMARY KEY (user_id, key)`: ユーザーごとにキーの名前空間を分離
-- `updated_by`: 最終更新者を記録
-- `last_accessed_at`: 最終アクセス日時を記録
-- `expires_at`: 有効期限を追加 (NULL の場合は無期限)
-
 ### 2.1.2 users (ユーザー)
 
 ```sql
@@ -53,9 +47,6 @@ CREATE TABLE users (
 CREATE INDEX idx_users_username ON users(username);
 CREATE INDEX idx_users_credential_id ON users(credential_id);
 ```
-
-**変更点**:
-- `is_admin` カラムを削除 (すべてのユーザーが対等)
 
 ### 2.1.3 tokens (アクセストークン)
 
@@ -79,9 +70,6 @@ CREATE INDEX idx_tokens_is_revoked ON tokens(is_revoked);
 CREATE INDEX idx_tokens_created_at ON tokens(created_at);
 ```
 
-**変更点**:
-- `created_at` にインデックスを追加 (トークン数制限で最古のトークンを検索するため)
-
 ### 2.1.4 audit_logs (監査ログ)
 
 ```sql
@@ -104,9 +92,6 @@ CREATE INDEX idx_audit_logs_timestamp ON audit_logs(timestamp);
 CREATE INDEX idx_audit_logs_action ON audit_logs(action);
 CREATE INDEX idx_audit_logs_resource_key ON audit_logs(resource_key);
 ```
-
-**変更点**:
-- `action` に有効期限管理関連のアクション (`list_expiring`, `list_expired`, `cleanup_expired`) を追加
 
 ## 2.2 ER 図
 
