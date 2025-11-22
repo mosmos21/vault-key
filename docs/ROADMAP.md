@@ -1,6 +1,6 @@
 # VaultKey 開発ロードマップ
 
-このドキュメントは VaultKey の開発スコープを @mosmos/vaultkey-core と @mosmos/vaultkey-cli のバージョンごとに整理したものです。
+このドキュメントは VaultKey の開発スコープを @mosmos21/vaultkey-core と @mosmos21/vaultkey-cli のバージョンごとに整理したものです。
 
 ## バージョニング方針
 
@@ -16,7 +16,7 @@
 
 **リリース目標**: 基本的な機密情報管理機能の提供
 
-### @mosmos/vaultkey-core v0.1.0
+### @mosmos21/vaultkey-core v0.1.0
 
 **主要機能**:
 - ✅ 機密情報の暗号化保存・取得 (FR-1.1, FR-1.2)
@@ -60,7 +60,7 @@
 
 ---
 
-### @mosmos/vaultkey-cli v0.1.0
+### @mosmos21/vaultkey-cli v0.1.0
 
 **主要機能**:
 - ✅ 基本的な CLI コマンド (FR-6.1)
@@ -98,7 +98,7 @@
 
 **リリース目標**: Passkey 認証の実装、セキュリティ機能の強化
 
-### @mosmos/vaultkey-core v0.2.0
+### @mosmos21/vaultkey-core v0.2.0
 
 **主要機能**:
 - ✅ Passkey 認証の実装 (FR-2.1, FR-2.2)
@@ -139,7 +139,7 @@
 
 ---
 
-### @mosmos/vaultkey-cli v0.2.0
+### @mosmos21/vaultkey-cli v0.2.0
 
 **主要機能**:
 - ✅ Passkey 認証フローの実装 (FR-2.2)
@@ -170,7 +170,7 @@
 
 **リリース目標**: CLI の使いやすさ向上、監査ログ検索機能の追加
 
-### @mosmos/vaultkey-core v0.3.0
+### @mosmos21/vaultkey-core v0.3.0
 
 **主要機能**:
 - ✅ 監査ログ検索機能 (FR-4.2)
@@ -186,7 +186,7 @@
 
 ---
 
-### @mosmos/vaultkey-cli v0.3.0
+### @mosmos21/vaultkey-cli v0.3.0
 
 **主要機能**:
 - ✅ 出力フォーマット選択 (FR-6.3)
@@ -216,7 +216,7 @@
 
 **リリース目標**: PostgreSQL サポート、セキュリティ監査、ドキュメント整備
 
-### @mosmos/vaultkey-core v0.4.0
+### @mosmos21/vaultkey-core v0.4.0
 
 **主要機能**:
 - ✅ PostgreSQL サポート (Phase 4)
@@ -242,7 +242,7 @@
 
 ---
 
-### @mosmos/vaultkey-cli v0.4.0
+### @mosmos21/vaultkey-cli v0.4.0
 
 **主要機能**:
 - ✅ PostgreSQL サポート
@@ -262,7 +262,7 @@
 
 **リリース目標**: 安定版の提供、本番環境での使用を推奨
 
-### @mosmos/vaultkey-core v1.0.0
+### @mosmos21/vaultkey-core v1.0.0
 
 **主要機能**:
 - ✅ すべての機能の安定化
@@ -283,7 +283,7 @@
 
 ---
 
-### @mosmos/vaultkey-cli v1.0.0
+### @mosmos21/vaultkey-cli v1.0.0
 
 **主要機能**:
 - ✅ すべての CLI 機能の安定化

@@ -1,5 +1,5 @@
 /**
- * @mosmos/vaultkey-core
+ * @mosmos21/vaultkey-core
  * VaultKey のコアライブラリ
  */
 

@@ -1,5 +1,5 @@
 /**
- * @mosmos/vaultkey CLI
+ * @mosmos21/vaultkey CLI
  * VaultKey のコマンドラインインターフェース
  */
 
