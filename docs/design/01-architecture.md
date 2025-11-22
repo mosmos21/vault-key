@@ -1,0 +1,226 @@
+# 1. システムアーキテクチャ
+
+## 1.1 全体構成
+
+```
+┌─────────────────────────────────────────────────────────┐
+│                  アプリケーション                        │
+│            (TypeScript プログラム / CLI)                │
+└───────────────────┬─────────────────────────────────────┘
+                    │
+┌───────────────────▼─────────────────────────────────────┐
+│              ライブラリ API                              │
+│                 (VaultKeyClient)                        │
+└───────────────────┬─────────────────────────────────────┘
+                    │
+┌───────────────────▼─────────────────────────────────────┐
+│              ビジネスロジックレイヤー                    │
+│  ┌──────────┐  ┌──────────┐  ┌──────────┐             │
+│  │  認証    │  │  暗号化  │  │  認可    │             │
+│  │ (Auth)   │  │ (Crypto) │  │ (AuthZ)  │             │
+│  └──────────┘  └──────────┘  └──────────┘             │
+│  ┌──────────┐  ┌──────────┐  ┌──────────┐             │
+│  │  Token   │  │ Secrets  │  │  Audit   │             │
+│  │ Manager  │  │ Manager  │  │   Log    │             │
+│  └──────────┘  └──────────┘  └──────────┘             │
+└───────────────────┬─────────────────────────────────────┘
+                    │
+┌───────────────────▼─────────────────────────────────────┐
+│              データアクセスレイヤー                      │
+│                   (Repository)                          │
+└───────────────────┬─────────────────────────────────────┘
+                    │
+┌───────────────────▼─────────────────────────────────────┐
+│                  データベース                            │
+│            SQLite (開発) / PostgreSQL (本番)            │
+└─────────────────────────────────────────────────────────┘
+```
+
+## 1.2 データフロー
+
+### 1.2.1 認証フロー
+
+#### ブラウザ自動起動方式 (デフォルト)
+```
+CLI → vaultkey user login --username <username>
+    → CLI が認証サーバーを起動 (http://localhost:5000)
+    → ブラウザを自動的に開く
+    → ブラウザで WebAuthn Passkey 認証を実行
+    → 認証成功
+    → CLI にトークンが返される
+    → トークンを ~/.vaultkey/token に保存
+    → ブラウザを閉じる
+    → CLI に戻る
+```
+
+#### 手動コピー方式 (WSL など)
+```
+CLI → vaultkey user login --username <username> --manual
+    → CLI が認証サーバーを起動 (http://localhost:5000)
+    → 認証 URL を CLI に表示
+    → ユーザーが手動でブラウザを開いて URL にアクセス
+    → ブラウザで WebAuthn Passkey 認証を実行
+    → 認証成功
+    → ブラウザにトークンが表示される
+    → ユーザーがトークンをコピー
+    → CLI にトークンを貼り付け
+    → トークンを ~/.vaultkey/token に保存
+    → CLI に戻る
+```
+
+#### WebAuthn 内部フロー
+```
+Client → registerStart()
+      → WebAuthn Passkey 作成
+      → registerFinish()
+      → ユーザー情報 + 公開鍵を DB に保存
+
+Client → authenticateStart()
+      → WebAuthn チャレンジ生成
+      → authenticateFinish()
+      → 署名検証
+      → トークン発行
+      → トークンハッシュを DB に保存
+      → トークン (平文) を返却
+```
+
+### 1.2.2 機密情報アクセスフロー (ライブラリ経由)
+```
+Application → client.getSecret(key, token)
+           → Token Manager: トークン検証
+           → AuthZ: ユーザー所有権チェック (user_id 一致確認)
+           → Secrets Manager: キーの存在確認
+           → 有効期限チェック (expires_at)
+           → Crypto: 復号化
+           → Audit Log: アクセス記録
+           → メタデータ更新 (last_accessed_at)
+           → 機密情報 (平文) を返却
+```
+
+### 1.2.3 機密情報アクセスフロー (CLI 経由)
+```
+CLI → vaultkey secret get <key>
+    → トークンファイル/環境変数から読み込み
+    → VaultKeyClient.getSecret(key, token)
+    → (ライブラリと同じフロー)
+    → フォーマット変換 (JSON/YAML/テーブル)
+    → 標準出力に表示
+```
+
+### 1.2.4 機密情報保存フロー (対話的入力)
+```
+CLI → vaultkey secret set <key> [--expires-in <duration>]
+    → 対話的にパスワードプロンプトを表示
+    → ユーザーが値を入力 (マスク表示)
+    → トークンファイル/環境変数から読み込み
+    → VaultKeyClient.storeSecret(key, value, token, expiresAt)
+    → Token Manager: トークン検証
+    → AuthZ: ユーザー認証
+    → Crypto: 暗号化
+    → Secrets Manager: DB に保存 (user_id と紐付け)
+    → Audit Log: 保存記録
+    → 成功メッセージを表示
+```
+
+### 1.2.5 トークン数制限フロー
+```
+User → authenticateFinish()
+     → Token Manager: トークン発行
+     → TokenRepository: ユーザーの有効なトークン数をカウント
+     → トークン数が制限を超えている場合:
+       → 最も古いトークン (created_at が最小) を取得
+       → 古いトークンを無効化 (is_revoked = 1, revoked_at = now)
+     → 新しいトークンを DB に保存
+     → トークン (平文) を返却
+```
+
+## 1.3 ユーザー分離アーキテクチャ
+
+VaultKey は**ユーザーごとに完全に分離された名前空間**を提供します。
+
+### 1.3.1 基本原則
+- すべてのユーザーは対等な権限を持つ (管理者・一般ユーザーの区別なし)
+- 各ユーザーは自分が作成した機密情報のみにアクセス可能 (CRUD)
+- 他のユーザーが作成した機密情報には一切アクセスできない
+- キーの名前空間はユーザーごとに分離される
+
+### 1.3.2 名前空間の実装
+
+```
+secrets テーブル:
+  - 複合主キー: (user_id, key)
+  - user_id と key の組み合わせで一意性を保証
+
+例:
+  user_id | key          | encrypted_value
+  --------|--------------|------------------
+  alice   | api_key      | <encrypted>
+  bob     | api_key      | <encrypted>  ← 同じキー名でも別の機密情報
+  alice   | db_password  | <encrypted>
+```
+
+### 1.3.3 アクセス制御フロー
+
+```typescript
+// 機密情報取得時
+const getSecret = async (key: string, token: string) => {
+  // 1. トークンからユーザー ID を取得
+  const userId = await tokenManager.verifyToken(token);
+
+  // 2. ユーザー ID とキーで機密情報を検索
+  const secret = await secretRepository.findByUserAndKey(userId, key);
+
+  // 3. 機密情報が見つからない場合はエラー
+  if (!secret) {
+    throw new NotFoundError('機密情報が見つかりません');
+  }
+
+  // 4. 復号化して返却
+  return decrypt(secret.encrypted_value);
+};
+```
+
+## 1.4 有効期限管理アーキテクチャ
+
+### 1.4.1 有効期限の設定
+- 機密情報保存時・更新時に有効期限を指定可能
+- 有効期限は ISO 8601 形式で DB に保存 (`expires_at`)
+- 有効期限なしの機密情報は `expires_at = NULL`
+
+### 1.4.2 有効期限チェックフロー
+```typescript
+const getSecret = async (key: string, token: string) => {
+  const userId = await tokenManager.verifyToken(token);
+  const secret = await secretRepository.findByUserAndKey(userId, key);
+
+  // 有効期限チェック
+  if (secret.expires_at && new Date() > new Date(secret.expires_at)) {
+    throw new ExpiredError('機密情報の有効期限が切れています');
+  }
+
+  return decrypt(secret.encrypted_value);
+};
+```
+
+### 1.4.3 有効期限管理コマンド
+```bash
+# 有効期限切れ間近の機密情報を一覧表示 (デフォルト: 7 日以内)
+vaultkey secret list-expiring [--days 7]
+
+# 有効期限切れの機密情報を一覧表示
+vaultkey secret list-expired
+
+# 有効期限切れの機密情報を削除
+vaultkey secret cleanup-expired [--force]
+```
+
+## 1.5 監査ログアーキテクチャ
+
+### 1.5.1 ログの記録方針
+- すべてのユーザーの操作を共通の `audit_logs` テーブルに記録
+- ログ管理 (削除・アーカイブ・容量制限) は VaultKey 側で提供しない
+- ユーザー側でログのバックアップやローテーションを実施
+
+### 1.5.2 ログの検索
+- Phase 3 で実装予定
+- ユーザーは自分の操作ログのみ検索可能
