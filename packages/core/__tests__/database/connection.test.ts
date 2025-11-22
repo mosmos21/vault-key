@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { DatabaseSync } from 'node:sqlite';
-import { createConnection, closeConnection } from '../../src/database';
+import { createConnection, closeConnection } from '@core/database';
 
 describe('Database Connection', () => {
   let db: DatabaseSync;

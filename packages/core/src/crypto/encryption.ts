@@ -1,5 +1,5 @@
 import crypto from 'node:crypto';
-import { CryptoError } from '../utils/errors';
+import { CryptoError } from '@core/utils/errors';
 
 const deriveKey = (masterKey: string): Buffer => {
   return Buffer.from(masterKey, 'hex');

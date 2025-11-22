@@ -13,7 +13,7 @@ import {
   deleteExpiredSecrets,
   updateSecretLastAccessed,
   deleteAllUserSecrets,
-} from '../../src/database';
+} from '@core/database';
 
 describe('secretRepository', () => {
   let db: DatabaseSync;

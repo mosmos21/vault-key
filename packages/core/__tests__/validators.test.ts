@@ -5,7 +5,7 @@ import {
   validateMasterKey,
   validateUserId,
   ValidationError,
-} from '../src/utils';
+} from '@core/utils';
 import {
   TEST_MASTER_KEY,
   TEST_TOKEN,

@@ -2,7 +2,7 @@ import { DatabaseSync } from 'node:sqlite';
 import { readFileSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { DatabaseError } from '../utils/errors';
+import { DatabaseError } from '@core/utils/errors';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
