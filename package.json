@@ -1,5 +1,5 @@
 {
-  "name": "vault-key",
+  "name": "@mosmos_21/vault-key",
   "type": "module",
   "description": "機密情報を安全に管理するための TypeScript ライブラリおよび CLI ツール。WebAuthn Passkey 認証、暗号化された機密情報の保存、監査ログなどの機能を提供します。",
   "scripts": {
