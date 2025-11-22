@@ -3,6 +3,7 @@
   "type": "module",
   "description": "機密情報を安全に管理するための TypeScript ライブラリおよび CLI ツール。WebAuthn Passkey 認証、暗号化された機密情報の保存、監査ログなどの機能を提供します。",
   "scripts": {
+    "build": "pnpm -r build",
     "check": "run-s check:*",
     "check:eslint": "eslint .",
     "check:prettier": "prettier --check .",
@@ -31,6 +32,7 @@
   "packageManager": "pnpm@10.22.0",
   "devDependencies": {
     "@eslint/js": "^9.39.1",
+    "@types/node": "^24.10.1",
     "@typescript-eslint/eslint-plugin": "^8.47.0",
     "@typescript-eslint/parser": "^8.47.0",
     "@vitest/coverage-v8": "^4.0.13",
