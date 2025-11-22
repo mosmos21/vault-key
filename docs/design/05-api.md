@@ -209,7 +209,72 @@ const deletedCount = await client.deleteExpiredSecrets({
 
 **返り値**: `Promise<number>` (削除された件数)
 
-### 5.1.4 トークン管理 API
+### 5.1.4 ユーザー管理 API
+
+#### registerUser()
+
+Passkey を使って新規ユーザーを登録します。
+
+```typescript
+await client.registerUser({
+  userId: 'alice',
+  authServerPort: 5432, // オプション (デフォルト: 5432 または VAULTKEY_AUTH_PORT)
+  autoOpenBrowser: true, // オプション (デフォルト: true)
+});
+```
+
+**パラメータ**:
+- `userId` (string, 必須): ユーザー ID
+- `authServerPort` (number, オプション): 認証サーバーのポート番号 (デフォルト: 5432)
+- `autoOpenBrowser` (boolean, オプション): ブラウザを自動起動するか (デフォルト: true)
+
+**返り値**: `Promise<void>`
+
+**エラー**:
+- `ConflictError`: ユーザー ID が既に存在する
+- `ValidationError`: パラメータが不正
+
+**注意**:
+- この関数は認証サーバーを起動し、Passkey を作成します
+- `autoOpenBrowser: false` の場合、登録 URL を返却するので手動でブラウザを開く必要があります
+
+### 5.1.5 トークン管理 API
+
+#### issueToken()
+
+Passkey 認証を経由してトークンを発行します。
+
+```typescript
+const { token, userId } = await client.issueToken({
+  // 認証サーバーを起動し、Passkey 認証を実行
+  authServerPort: 5432, // オプション (デフォルト: 5432 または VAULTKEY_AUTH_PORT)
+  autoOpenBrowser: true, // オプション (デフォルト: true)
+  expiresIn: 3600, // オプション (デフォルト: 3600秒 = 1時間)
+});
+
+// 返り値:
+// {
+//   token: 'abc123...',
+//   userId: 'alice',
+//   expiresAt: '2025-01-22T11:00:00Z',
+// }
+```
+
+**パラメータ**:
+- `authServerPort` (number, オプション): 認証サーバーのポート番号 (デフォルト: 5432)
+- `autoOpenBrowser` (boolean, オプション): ブラウザを自動起動するか (デフォルト: true)
+- `expiresIn` (number, オプション): トークンの有効期限（秒） (デフォルト: 3600)
+
+**返り値**: `Promise<{ token: string; userId: string; expiresAt: string }>`
+
+**エラー**:
+- `AuthenticationError`: Passkey 認証に失敗
+- `NotFoundError`: ユーザーが見つからない
+
+**注意**:
+- この関数は認証サーバーを起動し、Passkey 認証を実行します
+- ユーザー ID は Passkey の credential_id から自動的に特定されます
+- `autoOpenBrowser: false` の場合、認証 URL を返却するので手動でブラウザを開く必要があります
 
 #### revokeToken()
 
@@ -257,7 +322,7 @@ const tokens = await client.listTokens({
 **エラー**:
 - `AuthenticationError`: トークンが無効または期限切れ
 
-### 5.1.5 型定義
+### 5.1.6 型定義
 
 ```typescript
 // types/secret.ts
@@ -301,7 +366,7 @@ export type VaultKeyClientConfig = {
 };
 ```
 
-### 5.1.6 エラークラス
+### 5.1.7 エラークラス
 
 以下のエラークラスを提供:
 
@@ -341,10 +406,10 @@ vaultkey init
 #### ユーザー登録
 
 ```bash
-vaultkey user register --username alice
+vaultkey user register alice
 
 # 出力:
-# 認証サーバーを起動しました: http://localhost:5000
+# 認証サーバーを起動しました: http://localhost:5432
 # ブラウザを開きます...
 # Passkey を作成してください。
 # ユーザーを登録しました: alice
@@ -354,17 +419,28 @@ vaultkey user register --username alice
 
 ```bash
 # デフォルト: ブラウザ自動起動
-vaultkey user login --username alice
+vaultkey user login
 
 # 手動コピー方式
-vaultkey user login --username alice --manual
+vaultkey user login --manual
 
 # 出力:
-# 認証サーバーを起動しました: http://localhost:5000
+# 認証サーバーを起動しました: http://localhost:5432
 # ブラウザを開きます...
 # Passkey で認証してください。
 # トークンを発行しました: abc123...
 # トークンを ~/.vaultkey/token に保存しました
+```
+
+#### ログアウト
+
+```bash
+# 現在のトークンを無効化
+vaultkey user logout
+
+# 出力:
+# トークンを無効化しました
+# ~/.vaultkey/token を削除しました
 ```
 
 #### 機密情報保存
@@ -530,7 +606,26 @@ vaultkey audit search --user alice --action get --from 2025-01-01
 # alice  get     dbPassword       2025-01-22 10:05:00  Yes
 ```
 
-### 5.2.2 トークンの扱い
+### 5.2.2 環境変数
+
+| 変数名 | 説明 | デフォルト値 |
+|--------|------|-------------|
+| `VAULTKEY_TOKEN` | アクセストークン | - |
+| `VAULTKEY_MASTER_KEY` | マスターキー (暗号化キー) | - |
+| `VAULTKEY_AUTH_PORT` | 認証サーバーのポート番号 | 5432 |
+
+```bash
+# トークンを環境変数で指定
+export VAULTKEY_TOKEN="abc123..."
+
+# マスターキーを環境変数で指定
+export VAULTKEY_MASTER_KEY="0123456789abcdef..."
+
+# 認証サーバーのポートを変更
+export VAULTKEY_AUTH_PORT=8080
+```
+
+### 5.2.3 トークンの扱い
 
 優先順位:
 1. `--token` オプション
@@ -546,11 +641,11 @@ export VAULTKEY_TOKEN="abc123..."
 vaultkey secret get apiKey
 
 # 3. トークンファイルから読み込み (login 時に自動保存)
-vaultkey user login --username alice
+vaultkey user login
 vaultkey secret get apiKey
 ```
 
-### 5.2.3 出力フォーマット
+### 5.2.4 出力フォーマット
 
 ```bash
 # デフォルト: テーブル形式 (人間が読みやすい)

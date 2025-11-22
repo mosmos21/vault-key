@@ -34,17 +34,14 @@ CREATE INDEX idx_secrets_last_accessed_at ON secrets(last_accessed_at);
 ```sql
 CREATE TABLE users (
     user_id TEXT PRIMARY KEY,
-    username TEXT NOT NULL UNIQUE,
     credential_id TEXT NOT NULL UNIQUE,   -- WebAuthn Credential ID
     public_key TEXT NOT NULL,             -- 公開鍵 (Base64 エンコード)
     created_at TEXT NOT NULL,             -- ISO 8601 形式
     last_login TEXT,                      -- 最終ログイン日時
-    CHECK (length(user_id) > 0),
-    CHECK (length(username) > 0)
+    CHECK (length(user_id) > 0)
 );
 
 -- インデックス
-CREATE INDEX idx_users_username ON users(username);
 CREATE INDEX idx_users_credential_id ON users(credential_id);
 ```
 
@@ -76,13 +73,13 @@ CREATE INDEX idx_tokens_created_at ON tokens(created_at);
 CREATE TABLE audit_logs (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     user_id TEXT NOT NULL,
-    action TEXT NOT NULL,                 -- 'get', 'store', 'update', 'delete', 'list', 'login', 'register'
+    action TEXT NOT NULL,                 -- 'get', 'store', 'update', 'delete', 'list', 'login', 'logout', 'register'
     resource_key TEXT,                    -- 対象のキー (機密情報操作の場合)
     timestamp TEXT NOT NULL,              -- ISO 8601 形式
     success INTEGER NOT NULL,             -- 0: 失敗, 1: 成功
     error_message TEXT,                   -- エラーメッセージ (失敗時のみ)
     FOREIGN KEY (user_id) REFERENCES users(user_id),
-    CHECK (action IN ('get', 'store', 'update', 'delete', 'list', 'login', 'register', 'list_expiring', 'list_expired', 'cleanup_expired')),
+    CHECK (action IN ('get', 'store', 'update', 'delete', 'list', 'login', 'logout', 'register', 'list_expiring', 'list_expired', 'cleanup_expired')),
     CHECK (success IN (0, 1))
 );
 
@@ -98,7 +95,6 @@ CREATE INDEX idx_audit_logs_resource_key ON audit_logs(resource_key);
 ```
 users
   ├── user_id (PK)
-  ├── username (UNIQUE)
   ├── credential_id (UNIQUE)
   ├── public_key
   └── ...

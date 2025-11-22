@@ -108,7 +108,7 @@ VaultKey は **Passkey (WebAuthn)** による強固な多要素認証を実装�
    - オリジンの検証
 
 4. 公開鍵を DB に保存
-   - user_id, username, credential_id, public_key を保存
+   - user_id, credential_id, public_key を保存
 
 ### 4.2.3 認証フロー
 
@@ -134,7 +134,7 @@ VaultKey は **Passkey (WebAuthn)** による強固な多要素認証を実装�
 
 #### ブラウザ自動起動方式 (デフォルト)
 
-1. CLI から認証サーバーを起動 (`http://localhost:5000`)
+1. CLI から認証サーバーを起動 (デフォルト: `http://localhost:5432`、環境変数 `VAULTKEY_AUTH_PORT` で変更可能)
 2. ブラウザを自動起動して認証ページを開く
 3. ブラウザで Passkey 認証を実行
 4. 認証成功後、トークンを CLI に返却
@@ -143,7 +143,7 @@ VaultKey は **Passkey (WebAuthn)** による強固な多要素認証を実装�
 
 #### 手動コピー方式 (WSL など)
 
-1. CLI から認証サーバーを起動 (`http://localhost:5000`)
+1. CLI から認証サーバーを起動 (デフォルト: `http://localhost:5432`、環境変数 `VAULTKEY_AUTH_PORT` で変更可能)
 2. 認証 URL を CLI に表示
 3. ユーザーが手動でブラウザを開いて URL にアクセス
 4. ブラウザで Passkey 認証を実行
@@ -233,7 +233,7 @@ CREATE TABLE secrets (
 
 **対策**:
 - 定期的な依存ライブラリの更新
-- セキュリティ監査の実施 (Phase 4)
+- セキュリティ監査の実施
 - npm audit の定期実行
 
 ## 4.5 セキュリティベストプラクティス
@@ -292,13 +292,3 @@ npm update
 # セキュリティパッチの適用
 npm audit fix
 ```
-
-## 4.6 セキュリティ監査 (Phase 4)
-
-Phase 4 では以下のセキュリティ監査を実施します:
-
-- OWASP Top 10 の対策確認
-- 暗号化実装のレビュー
-- 認証・認可フローの検証
-- 依存ライブラリの脆弱性スキャン
-- ペネトレーションテスト

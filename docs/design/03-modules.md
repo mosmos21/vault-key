@@ -3,58 +3,75 @@
 ## 3.1 ディレクトリ構成
 
 ```
-src/
-├── index.ts               # パッケージエントリポイント
-├── client.ts              # VaultKeyClient (公開 API)
-├── cli.ts                 # CLI エントリポイント
-├── config.ts              # 設定管理
-├── types/                 # 型定義
-│   ├── index.ts
-│   ├── user.ts
-│   ├── secret.ts
-│   ├── token.ts
-│   └── audit.ts
-├── crypto/                # 暗号化モジュール
-│   ├── index.ts
-│   ├── encryption.ts      # AES-256-GCM 暗号化
-│   └── token-hash.ts      # トークンハッシュ化 (SHA-256)
-├── auth/                  # 認証モジュール
-│   ├── index.ts
-│   ├── passkey.ts         # WebAuthn Passkey 処理
-│   ├── token-manager.ts   # トークン発行・検証
-│   └── auth-server.ts     # 認証サーバー (Phase 2)
-├── secrets/               # 機密情報管理
-│   ├── index.ts
-│   └── secrets-service.ts
-├── audit/                 # 監査ログ
-│   ├── index.ts
-│   └── audit-service.ts
-├── database/              # データベースアクセス
-│   ├── index.ts
-│   ├── connection.ts
-│   ├── migrations/
-│   │   └── 001-initial-schema.sql
-│   └── repositories/
-│       ├── index.ts
-│       ├── user-repository.ts
-│       ├── secret-repository.ts
-│       ├── token-repository.ts
-│       └── audit-repository.ts
-└── utils/                 # ユーティリティ
-    ├── index.ts
-    ├── errors.ts          # カスタムエラー
-    ├── validators.ts      # バリデーション
-    └── prompt.ts          # 対話的入力 (Phase 3)
-
-tests/
-├── client.test.ts
-├── crypto.test.ts
-├── auth.test.ts
-├── secrets.test.ts
-├── token-manager.test.ts
-├── cli.test.ts
-└── fixtures/
-    └── test-data.ts
+packages/
+├── core/                  # @mosmos/vaultkey-core (ライブラリパッケージ)
+│   ├── src/
+│   │   ├── index.ts               # パッケージエントリポイント
+│   │   ├── client.ts              # VaultKeyClient (公開 API)
+│   │   ├── config.ts              # 設定管理
+│   │   ├── types/                 # 型定義
+│   │   │   ├── index.ts
+│   │   │   ├── user.ts
+│   │   │   ├── secret.ts
+│   │   │   ├── token.ts
+│   │   │   └── audit.ts
+│   │   ├── crypto/                # 暗号化モジュール
+│   │   │   ├── index.ts
+│   │   │   ├── encryption.ts      # AES-256-GCM 暗号化
+│   │   │   └── tokenHash.ts       # トークンハッシュ化 (SHA-256)
+│   │   ├── auth/                  # 認証モジュール
+│   │   │   ├── index.ts
+│   │   │   ├── passkey.ts         # WebAuthn Passkey 処理
+│   │   │   ├── tokenManager.ts    # トークン発行・検証
+│   │   │   └── authServer.ts      # 認証サーバー
+│   │   ├── secrets/               # 機密情報管理
+│   │   │   ├── index.ts
+│   │   │   └── secretsService.ts
+│   │   ├── audit/                 # 監査ログ
+│   │   │   ├── index.ts
+│   │   │   └── auditService.ts
+│   │   ├── database/              # データベースアクセス
+│   │   │   ├── index.ts
+│   │   │   ├── connection.ts
+│   │   │   ├── migrations/
+│   │   │   │   └── 001-initialSchema.sql
+│   │   │   └── repositories/
+│   │   │       ├── index.ts
+│   │   │       ├── userRepository.ts
+│   │   │       ├── secretRepository.ts
+│   │   │       ├── tokenRepository.ts
+│   │   │       └── auditRepository.ts
+│   │   └── utils/                 # ユーティリティ
+│   │       ├── index.ts
+│   │       ├── errors.ts          # カスタムエラー
+│   │       └── validators.ts      # バリデーション
+│   ├── tests/
+│   │   ├── client.test.ts
+│   │   ├── crypto.test.ts
+│   │   ├── auth.test.ts
+│   │   ├── secrets.test.ts
+│   │   ├── tokenManager.test.ts
+│   │   └── fixtures/
+│   │       └── testData.ts
+│   ├── package.json
+│   └── tsconfig.json
+│
+└── cli/                   # @mosmos/vaultkey (CLI パッケージ)
+    ├── src/
+    │   ├── cli.ts                 # CLI エントリポイント
+    │   ├── commands/              # CLI コマンド
+    │   │   ├── init.ts
+    │   │   ├── user.ts
+    │   │   ├── secret.ts
+    │   │   ├── token.ts
+    │   │   └── audit.ts
+    │   └── utils/
+    │       ├── prompt.ts          # 対話的入力 (Phase 3)
+    │       └── formatter.ts       # 出力フォーマット
+    ├── tests/
+    │   └── cli.test.ts
+    ├── package.json
+    └── tsconfig.json
 
 docs/
 ├── requirements/          # 要件定義書
@@ -97,6 +114,7 @@ export class VaultKeyClient {
 - `init`: データベース初期化
 - `user register`: ユーザー登録
 - `user login`: ユーザー認証・トークン発行
+- `user logout`: ログアウト・トークン無効化
 - `secret set/get/update/delete/list`: 機密情報管理
 - `secret list-expiring/list-expired/cleanup-expired`: 有効期限管理
 - `token revoke/list`: トークン管理

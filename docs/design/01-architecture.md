@@ -38,14 +38,43 @@
 
 ## 1.2 データフロー
 
-### 1.2.1 認証フロー
+### 1.2.1 ユーザー登録フロー
 
 #### ブラウザ自動起動方式 (デフォルト)
 ```
-CLI → vaultkey user login --username <username>
-    → CLI が認証サーバーを起動 (http://localhost:5000)
+CLI → vaultkey user register <user_id>
+    → CLI が認証サーバーを起動 (http://localhost:5432 または VAULTKEY_AUTH_PORT)
+    → ブラウザを自動的に開く
+    → ブラウザで WebAuthn Passkey を作成
+    → Passkey 作成成功
+    → ユーザー情報 (user_id, credential_id, public_key) を DB に保存
+    → CLI に成功メッセージが表示される
+    → ブラウザを閉じる
+    → CLI に戻る
+```
+
+#### 手動コピー方式 (WSL など)
+```
+CLI → vaultkey user register <user_id> --manual
+    → CLI が認証サーバーを起動 (http://localhost:5432 または VAULTKEY_AUTH_PORT)
+    → 登録 URL を CLI に表示
+    → ユーザーが手動でブラウザを開いて URL にアクセス
+    → ブラウザで WebAuthn Passkey を作成
+    → Passkey 作成成功
+    → ユーザー情報 (user_id, credential_id, public_key) を DB に保存
+    → ブラウザに成功メッセージが表示される
+    → CLI に戻る (Enter キーで続行)
+```
+
+### 1.2.2 認証フロー
+
+#### ブラウザ自動起動方式 (デフォルト)
+```
+CLI → vaultkey user login
+    → CLI が認証サーバーを起動 (http://localhost:5432 または VAULTKEY_AUTH_PORT)
     → ブラウザを自動的に開く
     → ブラウザで WebAuthn Passkey 認証を実行
+    → Passkey の credential_id から user_id を特定
     → 認証成功
     → CLI にトークンが返される
     → トークンを ~/.vaultkey/token に保存
@@ -55,17 +84,31 @@ CLI → vaultkey user login --username <username>
 
 #### 手動コピー方式 (WSL など)
 ```
-CLI → vaultkey user login --username <username> --manual
-    → CLI が認証サーバーを起動 (http://localhost:5000)
+CLI → vaultkey user login --manual
+    → CLI が認証サーバーを起動 (http://localhost:5432 または VAULTKEY_AUTH_PORT)
     → 認証 URL を CLI に表示
     → ユーザーが手動でブラウザを開いて URL にアクセス
     → ブラウザで WebAuthn Passkey 認証を実行
+    → Passkey の credential_id から user_id を特定
     → 認証成功
     → ブラウザにトークンが表示される
     → ユーザーがトークンをコピー
     → CLI にトークンを貼り付け
     → トークンを ~/.vaultkey/token に保存
     → CLI に戻る
+```
+
+### 1.2.3 ログアウトフロー
+
+```
+CLI → vaultkey user logout
+    → ~/.vaultkey/token からトークンを読み込み
+    → Token Manager: トークンを無効化
+    → tokens テーブルで is_revoked = 1 に更新
+    → revoked_at に現在時刻を設定
+    → ~/.vaultkey/token ファイルを削除
+    → Audit Log: ログアウト記録
+    → 成功メッセージを表示
 ```
 
 #### WebAuthn 内部フロー
@@ -84,7 +127,7 @@ Client → authenticateStart()
       → トークン (平文) を返却
 ```
 
-### 1.2.2 機密情報アクセスフロー (ライブラリ経由)
+### 1.2.4 機密情報アクセスフロー (ライブラリ経由)
 ```
 Application → client.getSecret(key, token)
            → Token Manager: トークン検証
@@ -97,7 +140,7 @@ Application → client.getSecret(key, token)
            → 機密情報 (平文) を返却
 ```
 
-### 1.2.3 機密情報アクセスフロー (CLI 経由)
+### 1.2.5 機密情報アクセスフロー (CLI 経由)
 ```
 CLI → vaultkey secret get <key>
     → トークンファイル/環境変数から読み込み
@@ -107,7 +150,7 @@ CLI → vaultkey secret get <key>
     → 標準出力に表示
 ```
 
-### 1.2.4 機密情報保存フロー (対話的入力)
+### 1.2.6 機密情報保存フロー (対話的入力)
 ```
 CLI → vaultkey secret set <key> [--expires-in <duration>]
     → 対話的にパスワードプロンプトを表示
@@ -122,7 +165,7 @@ CLI → vaultkey secret set <key> [--expires-in <duration>]
     → 成功メッセージを表示
 ```
 
-### 1.2.5 トークン数制限フロー
+### 1.2.7 トークン数制限フロー
 ```
 User → authenticateFinish()
      → Token Manager: トークン発行
