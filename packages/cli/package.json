@@ -1,5 +1,5 @@
 {
-  "name": "@mosmos21/vaultkey",
+  "name": "@mosmos_21/vaultkey",
   "version": "0.1.0",
   "description": "VaultKey の CLI ツール。コマンドラインから機密情報を管理できます。",
   "main": "dist/index.js",
@@ -24,7 +24,7 @@
   "author": "Takahito Hashimoto",
   "license": "MIT",
   "dependencies": {
-    "@mosmos21/vaultkey-core": "workspace:*"
+    "@mosmos_21/vaultkey-core": "workspace:*"
   },
   "devDependencies": {
     "typescript": "^5.9.3"

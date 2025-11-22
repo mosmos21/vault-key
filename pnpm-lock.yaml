@@ -50,7 +50,7 @@ importers:
 
   packages/cli:
     dependencies:
-      '@mosmos21/vaultkey-core':
+      '@mosmos_21/vaultkey-core':
         specifier: workspace:*
         version: link:../core
     devDependencies:
