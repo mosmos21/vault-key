@@ -9,7 +9,7 @@ import {
   getSecret,
   createToken,
   getToken,
-} from '../../src/database';
+} from '@core/database';
 
 describe('CASCADE DELETE', () => {
   let db: DatabaseSync;

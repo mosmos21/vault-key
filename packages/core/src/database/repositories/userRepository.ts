@@ -1,6 +1,6 @@
 import { DatabaseSync } from 'node:sqlite';
-import { User, CreateUserInput } from '../../types';
-import { DatabaseError } from '../../utils/errors';
+import { User, CreateUserInput } from '@core/types';
+import { DatabaseError } from '@core/utils/errors';
 
 /**
  * データベース行の型

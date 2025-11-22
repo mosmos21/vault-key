@@ -5,7 +5,7 @@ import {
   generateMasterKey,
   hashToken,
   generateToken,
-} from '../src/crypto';
+} from '@core/crypto';
 import {
   TEST_MASTER_KEY,
   TEST_PLAINTEXT,

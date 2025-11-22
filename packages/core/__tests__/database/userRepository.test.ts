@@ -9,7 +9,7 @@ import {
   getAllUsers,
   updateUserLastLogin,
   deleteUser,
-} from '../../src/database';
+} from '@core/database';
 
 describe('userRepository', () => {
   let db: DatabaseSync;

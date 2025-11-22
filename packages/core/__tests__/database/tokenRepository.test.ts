@@ -14,7 +14,7 @@ import {
   deleteOldestToken,
   deleteExpiredTokens,
   isTokenValid,
-} from '../../src/database';
+} from '@core/database';
 
 describe('tokenRepository', () => {
   let db: DatabaseSync;

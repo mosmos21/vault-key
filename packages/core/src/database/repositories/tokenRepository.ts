@@ -1,6 +1,6 @@
 import { DatabaseSync } from 'node:sqlite';
-import { Token } from '../../types';
-import { DatabaseError } from '../../utils/errors';
+import { Token } from '@core/types';
+import { DatabaseError } from '@core/utils/errors';
 
 /**
  * データベース行の型

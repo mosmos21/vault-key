@@ -1,6 +1,6 @@
 import { DatabaseSync } from 'node:sqlite';
-import { Secret, ListSecretsOptions } from '../../types';
-import { DatabaseError } from '../../utils/errors';
+import { Secret, ListSecretsOptions } from '@core/types';
+import { DatabaseError } from '@core/utils/errors';
 
 /**
  * データベース行の型 (BLOB は Uint8Array として取得される)
