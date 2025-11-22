@@ -2,7 +2,12 @@
   "name": "vault-key",
   "description": "機密情報を安全に管理するための TypeScript ライブラリおよび CLI ツール。WebAuthn Passkey 認証、暗号化された機密情報の保存、監査ログなどの機能を提供します。",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "check": "run-s check:*",
+    "check:eslint": "eslint .",
+    "check:prettier": "prettier --check .",
+    "fix": "run-s fix:*",
+    "fix:eslint": "eslint . --fix",
+    "fix:prettier": "prettier --write ."
   },
   "keywords": [
     "security",
@@ -20,6 +25,15 @@
   "license": "MIT",
   "packageManager": "pnpm@10.22.0",
   "devDependencies": {
-    "typescript": "^5.9.3"
+    "@eslint/js": "^9.39.1",
+    "@typescript-eslint/eslint-plugin": "^8.47.0",
+    "@typescript-eslint/parser": "^8.47.0",
+    "eslint": "^9.39.1",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-import": "^2.32.0",
+    "npm-run-all2": "^8.0.4",
+    "prettier": "^3.6.2",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.47.0"
   }
 }
