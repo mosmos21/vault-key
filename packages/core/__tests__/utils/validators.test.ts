@@ -11,7 +11,7 @@ import {
   TEST_TOKEN,
   TEST_USER_ID,
   TEST_KEY,
-} from './fixtures/testData';
+} from '../fixtures/testData';
 
 describe('validateKey', () => {
   test('accepts valid key names', () => {
