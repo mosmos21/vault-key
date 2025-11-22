@@ -16,7 +16,7 @@ export default defineConfig({
         '**/__tests__/**',
       ],
     },
-    include: ['**/__tests__/**/*.test.ts', '**/*.test.ts'],
-    exclude: ['node_modules', 'dist'],
+    include: ['packages/**/__tests__/**/*.test.ts'],
+    exclude: ['**/node_modules/**', 'dist', '**/*.config.ts'],
   },
 });
