@@ -1,0 +1,31 @@
+name: Publish
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+
+      - name: Setup Node.js and pnpm
+        uses: ./.github/actions/setup
+
+      - name: Build packages
+        run: |
+          pnpm -F @mosmos_21/vault-key-core build
+          pnpm -F @mosmos_21/vault-key-cli build
+
+      - name: Publish @mosmos_21/vault-key-core
+        run: pnpm -F @mosmos_21/vault-key-core publish --provenance --access public --no-git-checks
+
+      - name: Publish @mosmos_21/vault-key-cli
+        run: pnpm -F @mosmos_21/vault-key-cli publish --provenance --access public --no-git-checks
