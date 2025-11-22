@@ -10,7 +10,7 @@ import {
   TEST_MASTER_KEY,
   TEST_PLAINTEXT,
   TEST_TOKEN,
-} from './fixtures/testData';
+} from '../fixtures/testData';
 
 describe('encryption', () => {
   test('encrypt and decrypt work correctly', () => {
