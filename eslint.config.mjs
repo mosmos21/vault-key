@@ -32,4 +32,14 @@ export default defineConfig(
       'no-var': 'error',
     },
   },
+  {
+    // CLI commands ディレクトリでは console.log を許可
+    files: [
+      'packages/cli/src/commands/**/*.ts',
+      'packages/cli/src/utils/formatter.ts',
+    ],
+    rules: {
+      'no-console': 'off',
+    },
+  },
 );

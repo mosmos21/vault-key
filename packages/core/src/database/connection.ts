@@ -4,7 +4,18 @@ import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { DatabaseError } from '@core/utils/errors';
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
+// ESM 環境で __dirname を取得
+// ビルド後は dist/database/connection.js から実行されるため、
+// migrations は dist/database/migrations/ に配置される
+const getDirname = (): string => {
+  try {
+    return dirname(fileURLToPath(import.meta.url));
+  } catch {
+    // import.meta.url が使えない環境 (CJS など) では
+    // __dirname を使用 (グローバルに存在する場合)
+    return typeof __dirname !== 'undefined' ? __dirname : process.cwd();
+  }
+};
 
 /**
  * SQLite データベース接続を作成し、マイグレーションを実行する
@@ -30,7 +41,7 @@ export const createConnection = (dbPath: string): DatabaseSync => {
  */
 const runMigrations = (db: DatabaseSync): void => {
   const migrationPath = resolve(
-    __dirname,
+    getDirname(),
     './migrations/001-initial-schema.sql',
   );
 

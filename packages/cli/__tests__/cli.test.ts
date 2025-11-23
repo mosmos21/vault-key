@@ -1,0 +1,305 @@
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { existsSync, unlinkSync, mkdirSync, rmSync } from 'node:fs';
+import { join } from 'node:path';
+import { tmpdir } from 'node:os';
+import { execa } from 'execa';
+
+const TEST_DB_DIR = join(tmpdir(), 'vaultkey-cli-test');
+const TEST_DB_PATH = join(TEST_DB_DIR, 'test.db');
+const CLI_PATH = join(__dirname, '../src/cli.ts');
+// テスト用の固定マスターキー (32バイト)
+const TEST_MASTER_KEY =
+  '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
+
+const runCLI = (args: string[], options?: { input?: string }) => {
+  return execa('pnpm', ['exec', 'tsx', CLI_PATH, ...args], {
+    ...options,
+    env: {
+      VAULTKEY_MASTER_KEY: TEST_MASTER_KEY,
+    },
+    extendEnv: true,
+  });
+};
+
+describe('CLI Integration Tests', () => {
+  beforeEach(() => {
+    if (!existsSync(TEST_DB_DIR)) {
+      mkdirSync(TEST_DB_DIR, { recursive: true });
+    }
+  });
+
+  afterEach(() => {
+    if (existsSync(TEST_DB_PATH)) {
+      unlinkSync(TEST_DB_PATH);
+    }
+    if (existsSync(TEST_DB_DIR)) {
+      rmSync(TEST_DB_DIR, { recursive: true });
+    }
+  });
+
+  describe('init コマンド', () => {
+    it('データベースを初期化できる', async () => {
+      const { stdout } = await runCLI(['init', '--db-path', TEST_DB_PATH]);
+
+      expect(stdout).toContain('データベースを初期化しました');
+      expect(existsSync(TEST_DB_PATH)).toBe(true);
+    });
+  });
+
+  describe('user コマンド', () => {
+    beforeEach(async () => {
+      await runCLI(['init', '--db-path', TEST_DB_PATH]);
+    });
+
+    it('ユーザー登録ができる', async () => {
+      const { stdout } = await runCLI(
+        ['user', 'register', '--db-path', TEST_DB_PATH],
+        {
+          input: 'test-user\n',
+        },
+      );
+
+      expect(stdout).toContain('ユーザー "test-user" を登録しました');
+    });
+
+    it('ログインしてトークンを取得できる', async () => {
+      await runCLI(['user', 'register', '--db-path', TEST_DB_PATH], {
+        input: 'test-user\n',
+      });
+
+      const { stdout } = await runCLI(
+        ['user', 'login', '--db-path', TEST_DB_PATH],
+        {
+          input: 'test-user\n',
+        },
+      );
+
+      expect(stdout).toContain('ログインしました');
+      expect(stdout).toContain('トークン:');
+    });
+  });
+
+  describe('secret コマンド', () => {
+    let token: string;
+
+    beforeEach(async () => {
+      await runCLI(['init', '--db-path', TEST_DB_PATH]);
+      await runCLI(['user', 'register', '--db-path', TEST_DB_PATH], {
+        input: 'test-user\n',
+      });
+
+      const { stdout } = await runCLI(
+        ['user', 'login', '--db-path', TEST_DB_PATH],
+        {
+          input: 'test-user\n',
+        },
+      );
+
+      const match = stdout.match(/トークン: (.+)/);
+      if (match?.[1]) {
+        token = match[1].trim();
+      }
+    });
+
+    it('機密情報を保存できる', async () => {
+      const { stdout } = await runCLI(
+        [
+          'secret',
+          'set',
+          'test-key',
+          '--db-path',
+          TEST_DB_PATH,
+          '--token',
+          token,
+        ],
+        {
+          input: 'test-value\n',
+        },
+      );
+
+      expect(stdout).toContain('機密情報 "test-key" を保存しました');
+    });
+
+    it('機密情報を取得できる', async () => {
+      await runCLI(
+        [
+          'secret',
+          'set',
+          'test-key',
+          '--db-path',
+          TEST_DB_PATH,
+          '--token',
+          token,
+        ],
+        {
+          input: 'test-value\n',
+        },
+      );
+
+      const { stdout } = await runCLI([
+        'secret',
+        'get',
+        'test-key',
+        '--db-path',
+        TEST_DB_PATH,
+        '--token',
+        token,
+      ]);
+
+      // dotenv のメッセージが含まれる可能性があるため、最後の行のみをチェック
+      const lines = stdout.trim().split('\n');
+      expect(lines[lines.length - 1]).toBe('test-value');
+    });
+
+    it('機密情報を更新できる', async () => {
+      await runCLI(
+        [
+          'secret',
+          'set',
+          'test-key',
+          '--db-path',
+          TEST_DB_PATH,
+          '--token',
+          token,
+        ],
+        {
+          input: 'test-value\n',
+        },
+      );
+
+      const { stdout } = await runCLI(
+        [
+          'secret',
+          'update',
+          'test-key',
+          '--db-path',
+          TEST_DB_PATH,
+          '--token',
+          token,
+        ],
+        {
+          input: 'updated-value\n',
+        },
+      );
+
+      expect(stdout).toContain('機密情報 "test-key" を更新しました');
+
+      const { stdout: getValue } = await runCLI([
+        'secret',
+        'get',
+        'test-key',
+        '--db-path',
+        TEST_DB_PATH,
+        '--token',
+        token,
+      ]);
+      const lines = getValue.trim().split('\n');
+      expect(lines[lines.length - 1]).toBe('updated-value');
+    });
+
+    it('機密情報を削除できる', async () => {
+      await runCLI(
+        [
+          'secret',
+          'set',
+          'test-key',
+          '--db-path',
+          TEST_DB_PATH,
+          '--token',
+          token,
+        ],
+        {
+          input: 'test-value\n',
+        },
+      );
+
+      const { stdout } = await runCLI([
+        'secret',
+        'delete',
+        'test-key',
+        '--db-path',
+        TEST_DB_PATH,
+        '--token',
+        token,
+      ]);
+
+      expect(stdout).toContain('機密情報 "test-key" を削除しました');
+    });
+
+    it('機密情報一覧を取得できる', async () => {
+      await runCLI(
+        ['secret', 'set', 'key1', '--db-path', TEST_DB_PATH, '--token', token],
+        {
+          input: 'value1\n',
+        },
+      );
+      await runCLI(
+        ['secret', 'set', 'key2', '--db-path', TEST_DB_PATH, '--token', token],
+        {
+          input: 'value2\n',
+        },
+      );
+
+      const { stdout } = await runCLI([
+        'secret',
+        'list',
+        '--db-path',
+        TEST_DB_PATH,
+        '--token',
+        token,
+      ]);
+
+      expect(stdout).toContain('key1');
+      expect(stdout).toContain('key2');
+    });
+  });
+
+  describe('token コマンド', () => {
+    let token: string;
+
+    beforeEach(async () => {
+      await runCLI(['init', '--db-path', TEST_DB_PATH]);
+      await runCLI(['user', 'register', '--db-path', TEST_DB_PATH], {
+        input: 'test-user\n',
+      });
+
+      const { stdout } = await runCLI(
+        ['user', 'login', '--db-path', TEST_DB_PATH],
+        {
+          input: 'test-user\n',
+        },
+      );
+
+      const match = stdout.match(/トークン: (.+)/);
+      if (match?.[1]) {
+        token = match[1].trim();
+      }
+    });
+
+    it('トークン一覧を取得できる', async () => {
+      const { stdout } = await runCLI([
+        'token',
+        'list',
+        '--db-path',
+        TEST_DB_PATH,
+        '--token',
+        token,
+      ]);
+
+      expect(stdout).toContain('Token Hash');
+      expect(stdout).toContain('test-user');
+    });
+
+    it('トークンを無効化できる', async () => {
+      const { stdout } = await runCLI([
+        'token',
+        'revoke',
+        token,
+        '--db-path',
+        TEST_DB_PATH,
+      ]);
+
+      expect(stdout).toContain('トークンを無効化しました');
+    });
+  });
+});

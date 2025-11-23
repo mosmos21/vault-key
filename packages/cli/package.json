@@ -35,9 +35,15 @@
   "author": "Takahito Hashimoto",
   "license": "MIT",
   "dependencies": {
-    "@mosmos_21/vault-key-core": "workspace:*"
+    "@mosmos_21/vault-key-core": "workspace:*",
+    "chalk": "^5.6.2",
+    "commander": "^14.0.2",
+    "dotenv": "^17.2.3",
+    "prompts": "^2.4.2"
   },
   "devDependencies": {
+    "@types/prompts": "^2.4.9",
+    "execa": "^9.6.0",
     "typescript": "^5.9.3"
   }
 }
