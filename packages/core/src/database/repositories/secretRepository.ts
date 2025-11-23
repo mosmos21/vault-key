@@ -142,7 +142,7 @@ export const listSecrets = (
   try {
     let sql = `SELECT * FROM secrets WHERE userId = ?`;
     if (!options.includeExpired) {
-      sql += ` AND (expiresAt IS NULL OR expiresAt > datetime('now'))`;
+      sql += ` AND (expiresAt IS NULL OR datetime(expiresAt) > datetime('now'))`;
     }
     sql += ` ORDER BY createdAt DESC`;
 
@@ -164,7 +164,7 @@ export const listExpiredSecrets = (
   try {
     const stmt = db.prepare(`
       SELECT * FROM secrets
-      WHERE userId = ? AND expiresAt <= datetime('now')
+      WHERE userId = ? AND datetime(expiresAt) <= datetime('now')
       ORDER BY expiresAt ASC
     `);
     const rows = stmt.all(userId) as SecretRow[];
@@ -184,7 +184,7 @@ export const deleteExpiredSecrets = (
   try {
     const stmt = db.prepare(`
       DELETE FROM secrets
-      WHERE userId = ? AND expiresAt <= datetime('now')
+      WHERE userId = ? AND datetime(expiresAt) <= datetime('now')
     `);
     const result = stmt.run(userId);
     return Number(result.changes ?? 0);
