@@ -15,9 +15,9 @@ const runCLI = (args: string[], options?: { input?: string }) => {
   return execa('pnpm', ['exec', 'tsx', CLI_PATH, ...args], {
     ...options,
     env: {
-      ...process.env,
       VAULTKEY_ENCRYPTION_KEY: TEST_ENCRYPTION_KEY,
     },
+    extendEnv: true,
   });
 };
 
