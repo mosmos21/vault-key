@@ -133,10 +133,16 @@ export const listSecrets = (
     if (!options.includeExpired) {
       sql += ` AND (expiresAt IS NULL OR datetime(expiresAt) > datetime('now'))`;
     }
+    if (options.pattern) {
+      sql += ` AND key LIKE ?`;
+    }
     sql += ` ORDER BY createdAt DESC`;
 
     const stmt = db.prepare(sql);
-    const rows = stmt.all(userId);
+    const params = options.pattern
+      ? [userId, options.pattern.replace(/\*/g, '%')]
+      : [userId];
+    const rows = stmt.all(...params);
     const parsedRows = rows.map((row) => secretRowSchema.parse(row));
     return parsedRows.map(rowToSecret);
   } catch {

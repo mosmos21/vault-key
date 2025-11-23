@@ -40,6 +40,8 @@ export type UpdateSecretInput = {
 export type ListSecretsOptions = {
   /** Include expired secrets */
   includeExpired?: boolean;
+  /** Pattern matching (wildcard * supported) */
+  pattern?: string;
 };
 
 /**
