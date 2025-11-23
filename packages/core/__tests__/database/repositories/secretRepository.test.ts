@@ -14,6 +14,7 @@ import {
   updateSecretLastAccessed,
   deleteAllUserSecrets,
 } from '@core/database';
+import { lastAccessedAtRowSchema } from '@core/database/schemas';
 
 describe('secretRepository', () => {
   let db: DatabaseSync;
@@ -193,10 +194,9 @@ describe('secretRepository', () => {
     const stmt = db.prepare(
       'SELECT lastAccessedAt FROM secrets WHERE userId = ? AND key = ?',
     );
-    const row = stmt.get('user1', 'api_key') as {
-      lastAccessedAt: string | null;
-    };
-    expect(row.lastAccessedAt).not.toBeNull();
+    const row = stmt.get('user1', 'api_key');
+    const parsedRow = lastAccessedAtRowSchema.parse(row);
+    expect(parsedRow.lastAccessedAt).not.toBeNull();
   });
 
   it('should delete all user secrets', () => {

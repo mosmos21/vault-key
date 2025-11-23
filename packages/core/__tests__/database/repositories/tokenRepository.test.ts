@@ -15,6 +15,7 @@ import {
   deleteExpiredTokens,
   isTokenValid,
 } from '@core/database';
+import { lastUsedAtRowSchema } from '@core/database/schemas';
 
 describe('tokenRepository', () => {
   let db: DatabaseSync;
@@ -148,8 +149,9 @@ describe('tokenRepository', () => {
     const stmt = db.prepare(
       'SELECT lastUsedAt FROM tokens WHERE tokenHash = ?',
     );
-    const row = stmt.get('hash1') as { lastUsedAt: string | null };
-    expect(row.lastUsedAt).not.toBeNull();
+    const row = stmt.get('hash1');
+    const parsedRow = lastUsedAtRowSchema.parse(row);
+    expect(parsedRow.lastUsedAt).not.toBeNull();
   });
 
   it('should delete oldest token', () => {
