@@ -1,17 +1,7 @@
 import { DatabaseSync } from 'node:sqlite';
 import { User, CreateUserInput } from '@core/types';
 import { DatabaseError } from '@core/utils/errors';
-
-/**
- * データベース行の型
- */
-type UserRow = {
-  userId: string;
-  credentialId: string;
-  publicKey: string;
-  createdAt: string;
-  lastLogin: string | null;
-};
+import { userRowSchema, type UserRow } from '@core/database/schemas';
 
 /**
  * データベース行から User 型に変換
@@ -46,8 +36,12 @@ export const getUserById = (db: DatabaseSync, userId: string): User | null => {
     const stmt = db.prepare(`
       SELECT * FROM users WHERE userId = ?
     `);
-    const row = stmt.get(userId) as UserRow | undefined;
-    return row ? rowToUser(row) : null;
+    const row = stmt.get(userId);
+    if (!row) {
+      return null;
+    }
+    const parsedRow = userRowSchema.parse(row);
+    return rowToUser(parsedRow);
   } catch {
     throw new DatabaseError('Failed to get user by ID');
   }
@@ -64,8 +58,12 @@ export const getUserByCredentialId = (
     const stmt = db.prepare(`
       SELECT * FROM users WHERE credentialId = ?
     `);
-    const row = stmt.get(credentialId) as UserRow | undefined;
-    return row ? rowToUser(row) : null;
+    const row = stmt.get(credentialId);
+    if (!row) {
+      return null;
+    }
+    const parsedRow = userRowSchema.parse(row);
+    return rowToUser(parsedRow);
   } catch {
     throw new DatabaseError('Failed to get user by credential ID');
   }
@@ -79,8 +77,9 @@ export const getAllUsers = (db: DatabaseSync): User[] => {
     const stmt = db.prepare(`
       SELECT * FROM users ORDER BY createdAt DESC
     `);
-    const rows = stmt.all() as UserRow[];
-    return rows.map(rowToUser);
+    const rows = stmt.all();
+    const parsedRows = rows.map((row) => userRowSchema.parse(row));
+    return parsedRows.map(rowToUser);
   } catch {
     throw new DatabaseError('Failed to get all users');
   }

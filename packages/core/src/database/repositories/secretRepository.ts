@@ -1,22 +1,7 @@
 import { DatabaseSync } from 'node:sqlite';
 import { Secret, ListSecretsOptions } from '@core/types';
 import { DatabaseError } from '@core/utils/errors';
-
-/**
- * データベース行の型 (BLOB は Uint8Array として取得される)
- */
-type SecretRow = {
-  userId: string;
-  key: string;
-  encryptedValue: Uint8Array;
-  createdAt: string;
-  updatedAt: string;
-  createdBy: string;
-  updatedBy: string | null;
-  lastAccessedAt: string | null;
-  expiresAt: string | null;
-  metadata: string | null;
-};
+import { secretRowSchema, type SecretRow } from '@core/database/schemas';
 
 /**
  * データベース行から Secret 型に変換
@@ -72,8 +57,12 @@ export const getSecret = (
     const stmt = db.prepare(`
       SELECT * FROM secrets WHERE userId = ? AND key = ?
     `);
-    const row = stmt.get(userId, key) as SecretRow | undefined;
-    return row ? rowToSecret(row) : null;
+    const row = stmt.get(userId, key);
+    if (!row) {
+      return null;
+    }
+    const parsedRow = secretRowSchema.parse(row);
+    return rowToSecret(parsedRow);
   } catch {
     throw new DatabaseError('Failed to get secret');
   }
@@ -147,8 +136,9 @@ export const listSecrets = (
     sql += ` ORDER BY createdAt DESC`;
 
     const stmt = db.prepare(sql);
-    const rows = stmt.all(userId) as SecretRow[];
-    return rows.map(rowToSecret);
+    const rows = stmt.all(userId);
+    const parsedRows = rows.map((row) => secretRowSchema.parse(row));
+    return parsedRows.map(rowToSecret);
   } catch {
     throw new DatabaseError('Failed to list secrets');
   }
@@ -167,8 +157,9 @@ export const listExpiredSecrets = (
       WHERE userId = ? AND datetime(expiresAt) <= datetime('now')
       ORDER BY expiresAt ASC
     `);
-    const rows = stmt.all(userId) as SecretRow[];
-    return rows.map(rowToSecret);
+    const rows = stmt.all(userId);
+    const parsedRows = rows.map((row) => secretRowSchema.parse(row));
+    return parsedRows.map(rowToSecret);
   } catch {
     throw new DatabaseError('DATABASE_ERROR');
   }

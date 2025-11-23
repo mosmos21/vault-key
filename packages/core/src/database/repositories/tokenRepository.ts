@@ -1,19 +1,11 @@
 import { DatabaseSync } from 'node:sqlite';
 import { Token } from '@core/types';
 import { DatabaseError } from '@core/utils/errors';
-
-/**
- * データベース行の型
- */
-type TokenRow = {
-  tokenHash: string;
-  userId: string;
-  expiresAt: string;
-  createdAt: string;
-  isRevoked: number;
-  revokedAt: string | null;
-  lastUsedAt: string | null;
-};
+import {
+  tokenRowSchema,
+  countRowSchema,
+  type TokenRow,
+} from '@core/database/schemas';
 
 /**
  * データベース行から Token 型に変換
@@ -55,8 +47,12 @@ export const getToken = (db: DatabaseSync, tokenHash: string): Token | null => {
         AND isRevoked = 0
         AND datetime(expiresAt) > datetime('now')
     `);
-    const row = stmt.get(tokenHash) as TokenRow | undefined;
-    return row ? rowToToken(row) : null;
+    const row = stmt.get(tokenHash);
+    if (!row) {
+      return null;
+    }
+    const parsedRow = tokenRowSchema.parse(row);
+    return rowToToken(parsedRow);
   } catch {
     throw new DatabaseError('Failed to get token');
   }
@@ -74,8 +70,9 @@ export const listUserTokens = (db: DatabaseSync, userId: string): Token[] => {
         AND datetime(expiresAt) > datetime('now')
       ORDER BY createdAt DESC
     `);
-    const rows = stmt.all(userId) as TokenRow[];
-    return rows.map(rowToToken);
+    const rows = stmt.all(userId);
+    const parsedRows = rows.map((row) => tokenRowSchema.parse(row));
+    return parsedRows.map(rowToToken);
   } catch {
     throw new DatabaseError('Failed to list user tokens');
   }
@@ -92,8 +89,9 @@ export const countUserTokens = (db: DatabaseSync, userId: string): number => {
         AND isRevoked = 0
         AND datetime(expiresAt) > datetime('now')
     `);
-    const row = stmt.get(userId) as { count: number };
-    return row.count;
+    const row = stmt.get(userId);
+    const parsedRow = countRowSchema.parse(row);
+    return parsedRow.count;
   } catch {
     throw new DatabaseError('Failed to count user tokens');
   }
@@ -203,8 +201,9 @@ export const isTokenValid = (db: DatabaseSync, tokenHash: string): boolean => {
         AND isRevoked = 0
         AND datetime(expiresAt) > datetime('now')
     `);
-    const row = stmt.get(tokenHash) as { count: number };
-    return row.count > 0;
+    const row = stmt.get(tokenHash);
+    const parsedRow = countRowSchema.parse(row);
+    return parsedRow.count > 0;
   } catch {
     throw new DatabaseError('Failed to validate token');
   }

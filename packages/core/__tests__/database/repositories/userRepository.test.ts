@@ -10,6 +10,7 @@ import {
   updateUserLastLogin,
   deleteUser,
 } from '@core/database';
+import { lastLoginRowSchema } from '@core/database/schemas';
 
 describe('userRepository', () => {
   let db: DatabaseSync;
@@ -81,8 +82,9 @@ describe('userRepository', () => {
     updateUserLastLogin(db, 'user1');
 
     const stmt = db.prepare('SELECT lastLogin FROM users WHERE userId = ?');
-    const row = stmt.get('user1') as { lastLogin: string | null };
-    expect(row.lastLogin).not.toBeNull();
+    const row = stmt.get('user1');
+    const parsedRow = lastLoginRowSchema.parse(row);
+    expect(parsedRow.lastLogin).not.toBeNull();
   });
 
   it('should delete user', () => {

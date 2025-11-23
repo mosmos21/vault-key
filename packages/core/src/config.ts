@@ -4,6 +4,7 @@ import type { VaultKeyConfig } from './types';
 import { generateMasterKey } from './crypto';
 import { ValidationError } from './utils/errors';
 import { validateMasterKey } from './utils/validators';
+import { logLevelSchema } from './database/schemas';
 
 /**
  * Default configuration values
@@ -41,9 +42,17 @@ export const loadConfig = (masterKey?: string): VaultKeyConfig => {
   const authPort = process.env.VAULTKEY_AUTH_PORT
     ? Number.parseInt(process.env.VAULTKEY_AUTH_PORT, 10)
     : DEFAULT_CONFIG.authPort;
-  const logLevel =
-    (process.env.LOG_LEVEL as VaultKeyConfig['logLevel']) ??
-    DEFAULT_CONFIG.logLevel;
+
+  // 環境変数から LOG_LEVEL を取得し、Zod で検証
+  let logLevel: VaultKeyConfig['logLevel'] = DEFAULT_CONFIG.logLevel;
+  if (process.env.LOG_LEVEL) {
+    const parsedLogLevel = logLevelSchema.safeParse(process.env.LOG_LEVEL);
+    if (parsedLogLevel.success) {
+      logLevel = parsedLogLevel.data;
+    }
+    // 不正な値の場合はデフォルト値を使用 (エラーを投げない)
+  }
+
   const tokenTtl = process.env.VAULTKEY_TOKEN_TTL
     ? Number.parseInt(process.env.VAULTKEY_TOKEN_TTL, 10)
     : DEFAULT_CONFIG.tokenTtl;
