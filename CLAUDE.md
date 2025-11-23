@@ -241,9 +241,29 @@ pnpm fix:prettier    # Prettier の自動フォーマット
 
 ## 環境変数
 
+### Master key 関連
+
+Master key は以下の優先順位で読み込まれます:
+
+1. CLI オプション `--master-key` (直接指定)
+2. CLI オプション `--master-key-file` (ファイル指定)
+3. 環境変数 `VAULTKEY_ENCRYPTION_KEY` (直接指定)
+4. 環境変数 `VAULTKEY_MASTER_KEY` (直接指定、互換性)
+5. 環境変数 `VAULTKEY_MASTER_KEY_FILE` (ファイル指定)
+6. デフォルトファイル `~/.vaultkey/master.key`
+7. 自動生成 (デフォルトファイルに保存)
+
+- `VAULTKEY_ENCRYPTION_KEY`: Master key (64 文字の 16 進数文字列)
+- `VAULTKEY_MASTER_KEY`: Master key (64 文字の 16 進数文字列、互換性のため)
+- `VAULTKEY_MASTER_KEY_FILE`: Master key ファイルのパス
+
+### その他の環境変数
+
 - `LOG_LEVEL`: ログレベル (DEBUG, INFO, WARNING, ERROR, CRITICAL)
 - `VAULTKEY_AUTH_PORT`: 認証サーバーのポート (デフォルト: 5432)
 - `VAULTKEY_DB_PATH`: データベースファイルのパス (デフォルト: `~/.vaultkey/vaultkey.db`)
+- `VAULTKEY_TOKEN_TTL`: トークンの有効期限 (秒、デフォルト: 2592000 = 30 日)
+- `VAULTKEY_MAX_TOKENS_PER_USER`: 1 ユーザーあたりの最大トークン数 (デフォルト: 5)
 
 ## コミットメッセージ
 
