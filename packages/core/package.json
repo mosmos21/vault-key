@@ -34,6 +34,9 @@
   ],
   "author": "Takahito Hashimoto",
   "license": "MIT",
+  "repository": {
+    "url": "https://github.com/mosmos21/vault-key"
+  },
   "devDependencies": {
     "cpy-cli": "^6.0.0",
     "typescript": "^5.9.3"
