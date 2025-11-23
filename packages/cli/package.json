@@ -1,6 +1,6 @@
 {
   "name": "@mosmos_21/vault-key-cli",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "VaultKey の CLI ツール。コマンドラインから機密情報を管理できます。",
   "type": "module",
   "main": "dist/index.cjs",
