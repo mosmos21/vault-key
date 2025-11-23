@@ -37,6 +37,9 @@
   ],
   "author": "Takahito Hashimoto",
   "license": "MIT",
+  "repository": {
+    "url": "https://github.com/mosmos21/vault-key"
+  },
   "dependencies": {
     "@mosmos_21/vault-key-core": "workspace:*",
     "chalk": "^5.6.2",
