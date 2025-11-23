@@ -17,7 +17,7 @@
     "dist"
   ],
   "scripts": {
-    "build": "tsup"
+    "build": "tsup && cpy 'src/database/migrations/**/*.sql' dist/database/migrations"
   },
   "keywords": [
     "security",
@@ -32,6 +32,7 @@
   "author": "Takahito Hashimoto",
   "license": "MIT",
   "devDependencies": {
+    "cpy-cli": "^6.0.0",
     "typescript": "^5.9.3"
   },
   "dependencies": {
