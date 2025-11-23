@@ -2,6 +2,12 @@ import { Command } from 'commander';
 import { VaultKeyClient } from '@mosmos_21/vault-key-core';
 import { formatSuccess, formatError } from '../utils';
 
+type CommandOptions = {
+  dbPath?: string;
+  masterKey?: string;
+  masterKeyFile?: string;
+};
+
 /**
  * init コマンドを作成する
  */
@@ -11,11 +17,17 @@ export const createInitCommand = (): Command => {
   command
     .description('データベースを初期化する')
     .option('--db-path <path>', 'データベースファイルのパス')
-    .action(async (options: { dbPath?: string }) => {
+    .option('--master-key <key>', 'マスターキー (64 文字の 16 進数文字列)')
+    .option('--master-key-file <path>', 'マスターキーファイルのパス')
+    .action(async (options: CommandOptions) => {
       try {
-        const client = new VaultKeyClient(
-          options.dbPath ? { dbPath: options.dbPath } : undefined,
-        );
+        const client = new VaultKeyClient({
+          ...(options.dbPath ? { dbPath: options.dbPath } : {}),
+          ...(options.masterKey ? { masterKey: options.masterKey } : {}),
+          ...(options.masterKeyFile
+            ? { masterKeyFile: options.masterKeyFile }
+            : {}),
+        });
 
         client.close();
 

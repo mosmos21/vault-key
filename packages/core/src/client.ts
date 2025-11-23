@@ -13,6 +13,14 @@ import {
 import { listUserTokens } from './database/repositories/tokenRepository';
 
 /**
+ * VaultKeyClient のコンストラクタオプション
+ */
+export type VaultKeyClientOptions = Partial<VaultKeyConfig> & {
+  /** Master key file path (CLI option --master-key-file) */
+  masterKeyFile?: string;
+};
+
+/**
  * VaultKey のクライアントクラス
  * 機密情報の管理、ユーザー認証、トークン管理などの API を提供する
  */
@@ -20,8 +28,17 @@ export class VaultKeyClient {
   private db: DatabaseSync;
   private config: VaultKeyConfig;
 
-  constructor(config?: Partial<VaultKeyConfig>) {
-    this.config = loadConfig(config?.masterKey);
+  constructor(config?: VaultKeyClientOptions) {
+    this.config = loadConfig(
+      config?.masterKey || config?.masterKeyFile
+        ? {
+            ...(config.masterKey ? { masterKey: config.masterKey } : {}),
+            ...(config.masterKeyFile
+              ? { masterKeyFile: config.masterKeyFile }
+              : {}),
+          }
+        : undefined,
+    );
 
     if (config?.dbPath) {
       this.config.dbPath = config.dbPath;

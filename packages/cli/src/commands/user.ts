@@ -3,6 +3,12 @@ import { VaultKeyClient } from '@mosmos_21/vault-key-core';
 import prompts from 'prompts';
 import { formatSuccess, formatError, tokenStorage } from '../utils';
 
+type CommandOptions = {
+  dbPath?: string;
+  masterKey?: string;
+  masterKeyFile?: string;
+};
+
 /**
  * user コマンドを作成する
  */
@@ -16,7 +22,9 @@ export const createUserCommand = (): Command => {
     .command('register')
     .description('ユーザーを登録する')
     .option('--db-path <path>', 'データベースファイルのパス')
-    .action(async (options: { dbPath?: string }) => {
+    .option('--master-key <key>', 'マスターキー (64 文字の 16 進数文字列)')
+    .option('--master-key-file <path>', 'マスターキーファイルのパス')
+    .action(async (options: CommandOptions) => {
       try {
         const response = await prompts({
           type: 'text',
@@ -31,9 +39,13 @@ export const createUserCommand = (): Command => {
           process.exit(1);
         }
 
-        const client = new VaultKeyClient(
-          options.dbPath ? { dbPath: options.dbPath } : undefined,
-        );
+        const client = new VaultKeyClient({
+          ...(options.dbPath ? { dbPath: options.dbPath } : {}),
+          ...(options.masterKey ? { masterKey: options.masterKey } : {}),
+          ...(options.masterKeyFile
+            ? { masterKeyFile: options.masterKeyFile }
+            : {}),
+        });
 
         await client.registerUser(response.userId.trim());
         client.close();
@@ -54,7 +66,9 @@ export const createUserCommand = (): Command => {
     .command('login')
     .description('ログインしてトークンを発行する')
     .option('--db-path <path>', 'データベースファイルのパス')
-    .action(async (options: { dbPath?: string }) => {
+    .option('--master-key <key>', 'マスターキー (64 文字の 16 進数文字列)')
+    .option('--master-key-file <path>', 'マスターキーファイルのパス')
+    .action(async (options: CommandOptions) => {
       try {
         const response = await prompts({
           type: 'text',
@@ -69,9 +83,13 @@ export const createUserCommand = (): Command => {
           process.exit(1);
         }
 
-        const client = new VaultKeyClient(
-          options.dbPath ? { dbPath: options.dbPath } : undefined,
-        );
+        const client = new VaultKeyClient({
+          ...(options.dbPath ? { dbPath: options.dbPath } : {}),
+          ...(options.masterKey ? { masterKey: options.masterKey } : {}),
+          ...(options.masterKeyFile
+            ? { masterKeyFile: options.masterKeyFile }
+            : {}),
+        });
 
         const result = client.issueToken(response.userId.trim());
         const token = result.token;

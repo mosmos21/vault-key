@@ -27,11 +27,50 @@
 
 ### 4.1.2 マスターキーの管理
 
+**マスターキーの読み込み優先順位**:
+
+Master key は以下の優先順位で読み込まれます:
+
+1. CLI オプション `--master-key` (直接指定)
+2. CLI オプション `--master-key-file` (ファイル指定)
+3. 環境変数 `VAULTKEY_ENCRYPTION_KEY` (直接指定)
+4. 環境変数 `VAULTKEY_MASTER_KEY` (直接指定、互換性)
+5. 環境変数 `VAULTKEY_MASTER_KEY_FILE` (ファイル指定)
+6. デフォルトファイル `~/.vaultkey/master.key`
+7. 自動生成 (デフォルトファイルに保存)
+
 **環境変数での管理**:
 
 ```bash
-# 32 バイトの hex 文字列 (64 文字)
+# 直接指定 (推奨)
+export VAULTKEY_ENCRYPTION_KEY="0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+
+# ファイル指定
+export VAULTKEY_MASTER_KEY_FILE="/path/to/master.key"
+
+# 互換性のため (VAULTKEY_MASTER_KEY も利用可能)
 export VAULTKEY_MASTER_KEY="0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+```
+
+**CLI オプションでの指定**:
+
+```bash
+# 直接指定
+vaultkey secret get mykey --master-key "0123456789abcdef..."
+
+# ファイル指定
+vaultkey secret get mykey --master-key-file /path/to/master.key
+```
+
+**ファイルでの管理**:
+
+```bash
+# master key をファイルに保存 (権限 600 で自動保存)
+echo "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef" > ~/.vaultkey/master.key
+chmod 600 ~/.vaultkey/master.key
+
+# デフォルトファイルから自動読み込み
+vaultkey secret get mykey
 ```
 
 **生成方法**:
@@ -48,6 +87,7 @@ openssl rand -hex 32
 
 - マスターキーはコードリポジトリに含めない
 - `.env` ファイルを `.gitignore` に追加
+- Master key ファイルの権限は 600 (所有者のみ読み書き可能) を推奨
 - 本番環境では環境変数または専用のシークレット管理サービスを使用
 
 ### 4.1.3 トークンの保存

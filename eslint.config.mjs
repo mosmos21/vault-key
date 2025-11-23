@@ -42,4 +42,14 @@ export default defineConfig(
       'no-console': 'off',
     },
   },
+  {
+    // masterKeyLoader とそのテストでは console.log を許可 (ユーザーへの情報表示のため)
+    files: [
+      'packages/core/src/utils/masterKeyLoader.ts',
+      'packages/core/__tests__/utils/masterKeyLoader.test.ts',
+    ],
+    rules: {
+      'no-console': 'off',
+    },
+  },
 );

@@ -1,10 +1,12 @@
 import path from 'node:path';
 import os from 'node:os';
 import type { VaultKeyConfig } from './types';
-import { generateMasterKey } from './crypto';
 import { ValidationError } from './utils/errors';
-import { validateMasterKey } from './utils/validators';
 import { logLevelSchema } from './database/schemas';
+import {
+  loadMasterKey,
+  type LoadMasterKeyOptions,
+} from './utils/masterKeyLoader';
 
 /**
  * Default configuration values
@@ -18,25 +20,13 @@ const DEFAULT_CONFIG = {
 };
 
 /**
- * Load configuration from environment variables
+ * Load configuration from environment variables and options
  *
- * @param masterKey - Master key (if omitted, read from environment variables)
+ * @param options - Master key loading options
  * @returns VaultKey configuration
  */
-export const loadConfig = (masterKey?: string): VaultKeyConfig => {
-  const resolvedMasterKey =
-    masterKey ?? process.env.VAULTKEY_MASTER_KEY ?? generateMasterKey();
-
-  try {
-    validateMasterKey(resolvedMasterKey);
-  } catch (error) {
-    if (error instanceof ValidationError) {
-      throw new ValidationError(
-        `Master key format is invalid: ${error.message}`,
-      );
-    }
-    throw error;
-  }
+export const loadConfig = (options?: LoadMasterKeyOptions): VaultKeyConfig => {
+  const { masterKey } = loadMasterKey(options);
 
   const dbPath = process.env.VAULTKEY_DB_PATH ?? DEFAULT_CONFIG.dbPath;
   const authPort = process.env.VAULTKEY_AUTH_PORT
@@ -74,7 +64,7 @@ export const loadConfig = (masterKey?: string): VaultKeyConfig => {
 
   return {
     dbPath,
-    masterKey: resolvedMasterKey,
+    masterKey,
     authPort,
     logLevel,
     tokenTtl,

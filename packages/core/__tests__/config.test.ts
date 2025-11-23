@@ -1,6 +1,8 @@
-import { describe, test, expect, beforeEach, afterEach } from 'vitest';
+import { describe, test, expect, beforeEach, afterEach, vi } from 'vitest';
+import fs from 'node:fs';
 import { loadConfig } from '@core/config';
 import { ValidationError } from '@core/utils/errors';
+import { DEFAULT_MASTER_KEY_FILE } from '@core/utils/masterKeyLoader';
 import { TEST_MASTER_KEY } from './fixtures/testData';
 
 describe('loadConfig', () => {
@@ -8,14 +10,22 @@ describe('loadConfig', () => {
 
   beforeEach(() => {
     process.env = { ...originalEnv };
+    // console.log と console.warn をモック化
+    vi.spyOn(console, 'log').mockImplementation(() => {});
+    vi.spyOn(console, 'warn').mockImplementation(() => {});
   });
 
   afterEach(() => {
     process.env = originalEnv;
+    // デフォルトの master key ファイルをクリーンアップ
+    if (fs.existsSync(DEFAULT_MASTER_KEY_FILE)) {
+      fs.unlinkSync(DEFAULT_MASTER_KEY_FILE);
+    }
+    vi.restoreAllMocks();
   });
 
   test('loads config with provided master key', () => {
-    const config = loadConfig(TEST_MASTER_KEY);
+    const config = loadConfig({ masterKey: TEST_MASTER_KEY });
 
     expect(config.masterKey).toBe(TEST_MASTER_KEY);
     expect(config.dbPath).toContain('.vaultkey/vaultkey.db');
@@ -51,17 +61,21 @@ describe('loadConfig', () => {
   });
 
   test('throws ValidationError for invalid master key format', () => {
-    expect(() => loadConfig('invalid-key')).toThrow(ValidationError);
-    expect(() => loadConfig('invalid-key')).toThrow(
-      'Master key format is invalid',
+    expect(() => loadConfig({ masterKey: 'invalid-key' })).toThrow(
+      ValidationError,
+    );
+    expect(() => loadConfig({ masterKey: 'invalid-key' })).toThrow(
+      'Invalid master key from CLI option',
     );
   });
 
   test('throws ValidationError for invalid VAULTKEY_AUTH_PORT', () => {
     process.env.VAULTKEY_AUTH_PORT = 'invalid';
 
-    expect(() => loadConfig(TEST_MASTER_KEY)).toThrow(ValidationError);
-    expect(() => loadConfig(TEST_MASTER_KEY)).toThrow(
+    expect(() => loadConfig({ masterKey: TEST_MASTER_KEY })).toThrow(
+      ValidationError,
+    );
+    expect(() => loadConfig({ masterKey: TEST_MASTER_KEY })).toThrow(
       'VAULTKEY_AUTH_PORT must be a number',
     );
   });
@@ -69,8 +83,10 @@ describe('loadConfig', () => {
   test('throws ValidationError for invalid VAULTKEY_TOKEN_TTL', () => {
     process.env.VAULTKEY_TOKEN_TTL = 'invalid';
 
-    expect(() => loadConfig(TEST_MASTER_KEY)).toThrow(ValidationError);
-    expect(() => loadConfig(TEST_MASTER_KEY)).toThrow(
+    expect(() => loadConfig({ masterKey: TEST_MASTER_KEY })).toThrow(
+      ValidationError,
+    );
+    expect(() => loadConfig({ masterKey: TEST_MASTER_KEY })).toThrow(
       'VAULTKEY_TOKEN_TTL must be a number',
     );
   });
@@ -78,8 +94,10 @@ describe('loadConfig', () => {
   test('throws ValidationError for invalid VAULTKEY_MAX_TOKENS_PER_USER', () => {
     process.env.VAULTKEY_MAX_TOKENS_PER_USER = 'invalid';
 
-    expect(() => loadConfig(TEST_MASTER_KEY)).toThrow(ValidationError);
-    expect(() => loadConfig(TEST_MASTER_KEY)).toThrow(
+    expect(() => loadConfig({ masterKey: TEST_MASTER_KEY })).toThrow(
+      ValidationError,
+    );
+    expect(() => loadConfig({ masterKey: TEST_MASTER_KEY })).toThrow(
       'VAULTKEY_MAX_TOKENS_PER_USER must be a number',
     );
   });
@@ -91,7 +109,7 @@ describe('loadConfig', () => {
     delete process.env.VAULTKEY_TOKEN_TTL;
     delete process.env.VAULTKEY_MAX_TOKENS_PER_USER;
 
-    const config = loadConfig(TEST_MASTER_KEY);
+    const config = loadConfig({ masterKey: TEST_MASTER_KEY });
 
     expect(config.dbPath).toContain('.vaultkey/vaultkey.db');
     expect(config.authPort).toBe(5432);
@@ -104,7 +122,7 @@ describe('loadConfig', () => {
     process.env.VAULTKEY_MASTER_KEY =
       'ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff';
 
-    const config = loadConfig(TEST_MASTER_KEY);
+    const config = loadConfig({ masterKey: TEST_MASTER_KEY });
 
     expect(config.masterKey).toBe(TEST_MASTER_KEY);
   });

@@ -7,6 +7,13 @@ import {
   tokenStorage,
 } from '../utils';
 
+type CommandOptions = {
+  dbPath?: string;
+  token?: string;
+  masterKey?: string;
+  masterKeyFile?: string;
+};
+
 /**
  * token コマンドを作成する
  */
@@ -20,11 +27,17 @@ export const createTokenCommand = (): Command => {
     .command('revoke <token>')
     .description('トークンを無効化する')
     .option('--db-path <path>', 'データベースファイルのパス')
-    .action(async (targetToken: string, options: { dbPath?: string }) => {
+    .option('--master-key <key>', 'マスターキー (64 文字の 16 進数文字列)')
+    .option('--master-key-file <path>', 'マスターキーファイルのパス')
+    .action(async (targetToken: string, options: CommandOptions) => {
       try {
-        const client = new VaultKeyClient(
-          options.dbPath ? { dbPath: options.dbPath } : undefined,
-        );
+        const client = new VaultKeyClient({
+          ...(options.dbPath ? { dbPath: options.dbPath } : {}),
+          ...(options.masterKey ? { masterKey: options.masterKey } : {}),
+          ...(options.masterKeyFile
+            ? { masterKeyFile: options.masterKeyFile }
+            : {}),
+        });
 
         await client.revokeToken(targetToken);
         client.close();
@@ -46,7 +59,9 @@ export const createTokenCommand = (): Command => {
     .description('トークン一覧を取得する')
     .option('--db-path <path>', 'データベースファイルのパス')
     .option('--token <token>', 'アクセストークン')
-    .action(async (options: { dbPath?: string; token?: string }) => {
+    .option('--master-key <key>', 'マスターキー (64 文字の 16 進数文字列)')
+    .option('--master-key-file <path>', 'マスターキーファイルのパス')
+    .action(async (options: CommandOptions) => {
       try {
         const token = tokenStorage.get(options.token);
         if (!token) {
@@ -56,9 +71,13 @@ export const createTokenCommand = (): Command => {
           process.exit(1);
         }
 
-        const client = new VaultKeyClient(
-          options.dbPath ? { dbPath: options.dbPath } : undefined,
-        );
+        const client = new VaultKeyClient({
+          ...(options.dbPath ? { dbPath: options.dbPath } : {}),
+          ...(options.masterKey ? { masterKey: options.masterKey } : {}),
+          ...(options.masterKeyFile
+            ? { masterKeyFile: options.masterKeyFile }
+            : {}),
+        });
 
         const tokens = client.listTokens(token);
         client.close();
