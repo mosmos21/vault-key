@@ -45,11 +45,15 @@ export const createToken = (
 
 /**
  * トークンハッシュでトークンを取得する
+ * 無効化されたトークンや期限切れのトークンは返さない
  */
 export const getToken = (db: DatabaseSync, tokenHash: string): Token | null => {
   try {
     const stmt = db.prepare(`
-      SELECT * FROM tokens WHERE tokenHash = ?
+      SELECT * FROM tokens
+      WHERE tokenHash = ?
+        AND isRevoked = 0
+        AND datetime(expiresAt) > datetime('now')
     `);
     const row = stmt.get(tokenHash) as TokenRow | undefined;
     return row ? rowToToken(row) : null;
@@ -67,7 +71,7 @@ export const listUserTokens = (db: DatabaseSync, userId: string): Token[] => {
       SELECT * FROM tokens
       WHERE userId = ?
         AND isRevoked = 0
-        AND expiresAt > datetime('now')
+        AND datetime(expiresAt) > datetime('now')
       ORDER BY createdAt DESC
     `);
     const rows = stmt.all(userId) as TokenRow[];
@@ -86,7 +90,7 @@ export const countUserTokens = (db: DatabaseSync, userId: string): number => {
       SELECT COUNT(*) as count FROM tokens
       WHERE userId = ?
         AND isRevoked = 0
-        AND expiresAt > datetime('now')
+        AND datetime(expiresAt) > datetime('now')
     `);
     const row = stmt.get(userId) as { count: number };
     return row.count;
@@ -179,7 +183,7 @@ export const deleteExpiredTokens = (db: DatabaseSync): number => {
   try {
     const stmt = db.prepare(`
       DELETE FROM tokens
-      WHERE expiresAt <= datetime('now')
+      WHERE datetime(expiresAt) <= datetime('now')
     `);
     const result = stmt.run();
     return Number(result.changes ?? 0);
@@ -197,7 +201,7 @@ export const isTokenValid = (db: DatabaseSync, tokenHash: string): boolean => {
       SELECT COUNT(*) as count FROM tokens
       WHERE tokenHash = ?
         AND isRevoked = 0
-        AND expiresAt > datetime('now')
+        AND datetime(expiresAt) > datetime('now')
     `);
     const row = stmt.get(tokenHash) as { count: number };
     return row.count > 0;
