@@ -199,6 +199,10 @@ describe('masterKeyLoader', () => {
     });
 
     test('loads master key from default file', () => {
+      const dir = path.dirname(DEFAULT_MASTER_KEY_FILE);
+      if (!fs.existsSync(dir)) {
+        fs.mkdirSync(dir, { recursive: true });
+      }
       fs.writeFileSync(DEFAULT_MASTER_KEY_FILE, TEST_MASTER_KEY, {
         mode: 0o600,
       });
