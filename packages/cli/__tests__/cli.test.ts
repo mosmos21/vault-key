@@ -7,9 +7,18 @@ import { execa } from 'execa';
 const TEST_DB_DIR = join(tmpdir(), 'vaultkey-cli-test');
 const TEST_DB_PATH = join(TEST_DB_DIR, 'test.db');
 const CLI_PATH = join(__dirname, '../src/cli.ts');
+// テスト用の固定暗号化キー (32バイト)
+const TEST_ENCRYPTION_KEY =
+  '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
 
 const runCLI = (args: string[], options?: { input?: string }) => {
-  return execa('pnpm', ['exec', 'tsx', CLI_PATH, ...args], options);
+  return execa('pnpm', ['exec', 'tsx', CLI_PATH, ...args], {
+    ...options,
+    env: {
+      ...process.env,
+      VAULTKEY_ENCRYPTION_KEY: TEST_ENCRYPTION_KEY,
+    },
+  });
 };
 
 describe('CLI Integration Tests', () => {
