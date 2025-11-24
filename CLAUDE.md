@@ -259,7 +259,7 @@ Master key は以下の優先順位で読み込まれます:
 
 ### その他の環境変数
 
-- `LOG_LEVEL`: ログレベル (DEBUG, INFO, WARNING, ERROR, CRITICAL)
+- `VAULTKEY_LOG_LEVEL`: ログレベル (DEBUG, INFO, WARNING, ERROR, CRITICAL)
 - `VAULTKEY_AUTH_PORT`: 認証サーバーのポート (デフォルト: 5432)
 - `VAULTKEY_DB_PATH`: データベースファイルのパス (デフォルト: `~/.vaultkey/vaultkey.db`)
 - `VAULTKEY_TOKEN_TTL`: トークンの有効期限 (秒、デフォルト: 2592000 = 30 日)

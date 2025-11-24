@@ -4,6 +4,7 @@ import os from 'node:os';
 import { generateMasterKey } from '@core/crypto';
 import { ValidationError } from '@core/utils/errors';
 import { validateMasterKey } from '@core/utils/validators';
+import { logger } from '@core/logger';
 
 /**
  * Master key の読み込み元を示す列挙型
@@ -90,16 +91,16 @@ export const checkFilePermissions = (filePath: string): boolean => {
     const mode = stats.mode & 0o777;
 
     if (mode !== 0o600) {
-      console.warn(
-        `WARNING: Master key file ${filePath} has permissions ${mode.toString(8)}. Recommended permissions are 600 (owner read/write only).`,
+      logger.warning(
+        `Master key file ${filePath} has permissions ${mode.toString(8)}. Recommended permissions are 600 (owner read/write only).`,
       );
       return false;
     }
 
     return true;
   } catch (error) {
-    console.warn(
-      `WARNING: Failed to check file permissions for ${filePath}: ${error instanceof Error ? error.message : String(error)}`,
+    logger.warning(
+      `Failed to check file permissions for ${filePath}: ${error instanceof Error ? error.message : String(error)}`,
     );
     return false;
   }
@@ -156,7 +157,7 @@ export const loadMasterKey = (
   if (options?.masterKey) {
     try {
       validateMasterKey(options.masterKey);
-      console.log('Master key loaded from CLI option --master-key');
+      logger.info('Master key loaded from CLI option --master-key');
       return {
         masterKey: options.masterKey,
         source: 'option',
@@ -175,7 +176,7 @@ export const loadMasterKey = (
   if (options?.masterKeyFile) {
     try {
       const masterKey = readMasterKeyFromFile(options.masterKeyFile);
-      console.log(
+      logger.info(
         `Master key loaded from file specified by CLI option --master-key-file: ${options.masterKeyFile}`,
       );
       return {
@@ -197,7 +198,7 @@ export const loadMasterKey = (
   if (process.env.VAULTKEY_ENCRYPTION_KEY) {
     try {
       validateMasterKey(process.env.VAULTKEY_ENCRYPTION_KEY);
-      console.log(
+      logger.info(
         'Master key loaded from environment variable VAULTKEY_ENCRYPTION_KEY',
       );
       return {
@@ -218,7 +219,7 @@ export const loadMasterKey = (
   if (process.env.VAULTKEY_MASTER_KEY) {
     try {
       validateMasterKey(process.env.VAULTKEY_MASTER_KEY);
-      console.log(
+      logger.info(
         'Master key loaded from environment variable VAULTKEY_MASTER_KEY',
       );
       return {
@@ -241,7 +242,7 @@ export const loadMasterKey = (
       const masterKey = readMasterKeyFromFile(
         process.env.VAULTKEY_MASTER_KEY_FILE,
       );
-      console.log(
+      logger.info(
         `Master key loaded from file specified by environment variable VAULTKEY_MASTER_KEY_FILE: ${process.env.VAULTKEY_MASTER_KEY_FILE}`,
       );
       return {
@@ -263,7 +264,7 @@ export const loadMasterKey = (
   if (fs.existsSync(DEFAULT_MASTER_KEY_FILE)) {
     try {
       const masterKey = readMasterKeyFromFile(DEFAULT_MASTER_KEY_FILE);
-      console.log(
+      logger.info(
         `Master key loaded from default file: ${DEFAULT_MASTER_KEY_FILE}`,
       );
       return {
@@ -284,7 +285,7 @@ export const loadMasterKey = (
   // 7. 自動生成してデフォルトファイルに保存
   const masterKey = generateMasterKey();
   saveMasterKeyToFile(masterKey, DEFAULT_MASTER_KEY_FILE);
-  console.log(
+  logger.info(
     `Master key generated and saved to default file: ${DEFAULT_MASTER_KEY_FILE}`,
   );
 

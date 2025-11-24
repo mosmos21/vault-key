@@ -1,12 +1,13 @@
 import path from 'node:path';
 import os from 'node:os';
-import type { VaultKeyConfig } from './types';
-import { ValidationError } from './utils/errors';
-import { logLevelSchema } from './database/schemas';
+import type { VaultKeyConfig } from '@core/types';
+import { ValidationError } from '@core/utils/errors';
+import { logLevelSchema } from '@core/database/schemas';
 import {
   loadMasterKey,
   type LoadMasterKeyOptions,
-} from './utils/masterKeyLoader';
+} from '@core/utils/masterKeyLoader';
+import { DEFAULT_LOG_FILE_PATH } from '@core/logger/config';
 
 /**
  * Default configuration values
@@ -17,6 +18,9 @@ const DEFAULT_CONFIG = {
   logLevel: 'INFO' as const,
   tokenTtl: 30 * 24 * 60 * 60,
   maxTokensPerUser: 5,
+  logFileEnabled: true,
+  logFilePath: DEFAULT_LOG_FILE_PATH,
+  logConsoleEnabled: true,
 };
 
 /**
@@ -62,6 +66,14 @@ export const loadConfig = (options?: LoadMasterKeyOptions): VaultKeyConfig => {
     throw new ValidationError('VAULTKEY_MAX_TOKENS_PER_USER must be a number');
   }
 
+  // ログファイル設定
+  const logFileEnabled =
+    process.env.VAULTKEY_LOG_FILE_ENABLED?.toLowerCase() !== 'false';
+  const logConsoleEnabled =
+    process.env.VAULTKEY_LOG_CONSOLE_ENABLED?.toLowerCase() !== 'false';
+  const logFilePath =
+    process.env.VAULTKEY_LOG_FILE_PATH ?? DEFAULT_CONFIG.logFilePath;
+
   return {
     dbPath,
     masterKey,
@@ -69,5 +81,8 @@ export const loadConfig = (options?: LoadMasterKeyOptions): VaultKeyConfig => {
     logLevel,
     tokenTtl,
     maxTokensPerUser,
+    logFileEnabled,
+    logFilePath,
+    logConsoleEnabled,
   };
 };
