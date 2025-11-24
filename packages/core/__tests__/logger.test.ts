@@ -74,11 +74,21 @@ describe('Logger', () => {
 
   describe('loadLoggerConfig', () => {
     it('should load default configuration', () => {
+      // テスト時は vitest.config.ts で VAULTKEY_LOG_FILE_ENABLED='false' が設定されているため、
+      // 一時的に削除してデフォルトの動作をテストする
+      const originalFileEnabled = process.env.VAULTKEY_LOG_FILE_ENABLED;
+      delete process.env.VAULTKEY_LOG_FILE_ENABLED;
+
       const config = loadLoggerConfig('INFO');
       expect(config.logLevel).toBe('INFO');
       expect(config.consoleEnabled).toBe(true);
       expect(config.fileEnabled).toBe(true);
       expect(config.filePath).toContain('.vaultkey/logs/vaultkey.log');
+
+      // 環境変数を元に戻す
+      if (originalFileEnabled !== undefined) {
+        process.env.VAULTKEY_LOG_FILE_ENABLED = originalFileEnabled;
+      }
     });
 
     it('should respect VAULTKEY_LOG_FILE_ENABLED environment variable', () => {

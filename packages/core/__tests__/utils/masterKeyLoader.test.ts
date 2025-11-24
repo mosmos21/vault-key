@@ -18,13 +18,16 @@ describe('masterKeyLoader', () => {
 
   beforeEach(() => {
     process.env = { ...originalEnv };
-    // テスト用ディレクトリを作成
-    if (!fs.existsSync(testDir)) {
-      fs.mkdirSync(testDir, { recursive: true });
+    // テスト用ディレクトリをクリーンアップ（再帰的に削除）
+    if (fs.existsSync(testDir)) {
+      fs.rmSync(testDir, { recursive: true, force: true });
     }
-    // デフォルトの master key ファイルが存在する場合は削除
-    if (fs.existsSync(DEFAULT_MASTER_KEY_FILE)) {
-      fs.unlinkSync(DEFAULT_MASTER_KEY_FILE);
+    // テスト用ディレクトリを再作成
+    fs.mkdirSync(testDir, { recursive: true });
+    // DEFAULT_MASTER_KEY_FILE のディレクトリもクリーンアップ
+    const defaultMasterKeyDir = path.dirname(DEFAULT_MASTER_KEY_FILE);
+    if (fs.existsSync(defaultMasterKeyDir)) {
+      fs.rmSync(defaultMasterKeyDir, { recursive: true, force: true });
     }
     // console.log と console.warn をモック化
     vi.spyOn(console, 'log').mockImplementation(() => {});
@@ -33,16 +36,18 @@ describe('masterKeyLoader', () => {
 
   afterEach(() => {
     process.env = originalEnv;
-    // テストファイルをクリーンアップ
-    if (fs.existsSync(testMasterKeyFile)) {
-      fs.unlinkSync(testMasterKeyFile);
-    }
+    // テスト用ディレクトリ内のすべてのファイルを削除
     if (fs.existsSync(testDir)) {
+      const files = fs.readdirSync(testDir);
+      for (const file of files) {
+        const filePath = path.join(testDir, file);
+        if (fs.statSync(filePath).isDirectory()) {
+          fs.rmSync(filePath, { recursive: true, force: true });
+        } else {
+          fs.unlinkSync(filePath);
+        }
+      }
       fs.rmdirSync(testDir);
-    }
-    // デフォルトの master key ファイルをクリーンアップ
-    if (fs.existsSync(DEFAULT_MASTER_KEY_FILE)) {
-      fs.unlinkSync(DEFAULT_MASTER_KEY_FILE);
     }
     vi.restoreAllMocks();
   });
