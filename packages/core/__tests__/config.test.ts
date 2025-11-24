@@ -1,8 +1,6 @@
 import { describe, test, expect, beforeEach, afterEach, vi } from 'vitest';
-import fs from 'node:fs';
 import { loadConfig } from '@core/config';
 import { ValidationError } from '@core/utils/errors';
-import { DEFAULT_MASTER_KEY_FILE } from '@core/utils/masterKeyLoader';
 import { TEST_MASTER_KEY } from './fixtures/testData';
 
 describe('loadConfig', () => {
@@ -17,10 +15,6 @@ describe('loadConfig', () => {
 
   afterEach(() => {
     process.env = originalEnv;
-    // デフォルトの master key ファイルをクリーンアップ
-    if (fs.existsSync(DEFAULT_MASTER_KEY_FILE)) {
-      fs.unlinkSync(DEFAULT_MASTER_KEY_FILE);
-    }
     vi.restoreAllMocks();
   });
 
