@@ -8,8 +8,17 @@ import {
   createTokenCommand,
 } from './commands';
 
-// 環境変数を読み込み
-config();
+// ExperimentalWarning を抑制
+process.removeAllListeners('warning');
+process.on('warning', (warning) => {
+  if (warning.name === 'ExperimentalWarning') {
+    return;
+  }
+  console.warn(warning);
+});
+
+// 環境変数を読み込み (ログメッセージを抑制)
+config({ debug: false, quiet: true });
 
 const program = new Command();
 
