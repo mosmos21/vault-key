@@ -12,6 +12,15 @@ import {
 } from './secrets/secretsService';
 import { listUserTokens } from './database/repositories/tokenRepository';
 
+// ExperimentalWarning を抑制
+process.removeAllListeners('warning');
+process.on('warning', (warning) => {
+  if (warning.name === 'ExperimentalWarning') {
+    return;
+  }
+  console.warn(warning);
+});
+
 /**
  * VaultKeyClient のコンストラクタオプション
  */
