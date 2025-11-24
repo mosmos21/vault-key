@@ -33,23 +33,19 @@ Master key は以下の優先順位で読み込まれます:
 
 1. CLI オプション `--master-key` (直接指定)
 2. CLI オプション `--master-key-file` (ファイル指定)
-3. 環境変数 `VAULTKEY_ENCRYPTION_KEY` (直接指定)
-4. 環境変数 `VAULTKEY_MASTER_KEY` (直接指定、互換性)
-5. 環境変数 `VAULTKEY_MASTER_KEY_FILE` (ファイル指定)
-6. デフォルトファイル `~/.vaultkey/master.key`
-7. 自動生成 (デフォルトファイルに保存)
+3. 環境変数 `VAULTKEY_MASTER_KEY_FILE` (ファイル指定)
+4. デフォルトファイル `~/.vaultkey/master.key`
+5. 環境変数 `VAULTKEY_MASTER_KEY` (直接指定)
+6. 自動生成 (デフォルトファイルに保存)
 
 **環境変数での管理**:
 
 ```bash
-# 直接指定 (推奨)
-export VAULTKEY_ENCRYPTION_KEY="0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+# 直接指定
+export VAULTKEY_MASTER_KEY="0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
 
 # ファイル指定
 export VAULTKEY_MASTER_KEY_FILE="/path/to/master.key"
-
-# 互換性のため (VAULTKEY_MASTER_KEY も利用可能)
-export VAULTKEY_MASTER_KEY="0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
 ```
 
 **CLI オプションでの指定**:

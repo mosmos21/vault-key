@@ -12,7 +12,7 @@ import { logger } from '@core/logger';
 export type MasterKeySource =
   | 'option' // CLI オプション --master-key
   | 'option-file' // CLI オプション --master-key-file
-  | 'env-direct' // 環境変数 VAULTKEY_ENCRYPTION_KEY または VAULTKEY_MASTER_KEY
+  | 'env-direct' // 環境変数 VAULTKEY_MASTER_KEY
   | 'env-file' // 環境変数 VAULTKEY_MASTER_KEY_FILE
   | 'default-file' // デフォルトファイル ~/.vaultkey/master.key
   | 'generated'; // 自動生成
@@ -140,11 +140,10 @@ export const saveMasterKeyToFile = (
  * 優先順位:
  * 1. CLI オプション --master-key (直接指定)
  * 2. CLI オプション --master-key-file (ファイル指定)
- * 3. 環境変数 VAULTKEY_ENCRYPTION_KEY (直接指定)
- * 4. 環境変数 VAULTKEY_MASTER_KEY (直接指定、互換性)
- * 5. 環境変数 VAULTKEY_MASTER_KEY_FILE (ファイル指定)
- * 6. デフォルトファイル ~/.vaultkey/master.key
- * 7. 自動生成 (デフォルトファイルに保存)
+ * 3. 環境変数 VAULTKEY_MASTER_KEY_FILE (ファイル指定)
+ * 4. デフォルトファイル ~/.vaultkey/master.key
+ * 5. 環境変数 VAULTKEY_MASTER_KEY (直接指定)
+ * 6. 自動生成 (デフォルトファイルに保存)
  *
  * @param options - 読み込みオプション
  * @returns 読み込んだ master key と読み込み元の情報
@@ -194,49 +193,7 @@ export const loadMasterKey = (
     }
   }
 
-  // 3. 環境変数 VAULTKEY_ENCRYPTION_KEY
-  if (process.env.VAULTKEY_ENCRYPTION_KEY) {
-    try {
-      validateMasterKey(process.env.VAULTKEY_ENCRYPTION_KEY);
-      logger.info(
-        'Master key loaded from environment variable VAULTKEY_ENCRYPTION_KEY',
-      );
-      return {
-        masterKey: process.env.VAULTKEY_ENCRYPTION_KEY,
-        source: 'env-direct',
-      };
-    } catch (error) {
-      if (error instanceof ValidationError) {
-        throw new ValidationError(
-          `Invalid master key from environment variable VAULTKEY_ENCRYPTION_KEY: ${error.message}`,
-        );
-      }
-      throw error;
-    }
-  }
-
-  // 4. 環境変数 VAULTKEY_MASTER_KEY (互換性)
-  if (process.env.VAULTKEY_MASTER_KEY) {
-    try {
-      validateMasterKey(process.env.VAULTKEY_MASTER_KEY);
-      logger.info(
-        'Master key loaded from environment variable VAULTKEY_MASTER_KEY',
-      );
-      return {
-        masterKey: process.env.VAULTKEY_MASTER_KEY,
-        source: 'env-direct',
-      };
-    } catch (error) {
-      if (error instanceof ValidationError) {
-        throw new ValidationError(
-          `Invalid master key from environment variable VAULTKEY_MASTER_KEY: ${error.message}`,
-        );
-      }
-      throw error;
-    }
-  }
-
-  // 5. 環境変数 VAULTKEY_MASTER_KEY_FILE
+  // 3. 環境変数 VAULTKEY_MASTER_KEY_FILE
   if (process.env.VAULTKEY_MASTER_KEY_FILE) {
     try {
       const masterKey = readMasterKeyFromFile(
@@ -260,7 +217,7 @@ export const loadMasterKey = (
     }
   }
 
-  // 6. デフォルトファイル ~/.vaultkey/master.key
+  // 4. デフォルトファイル ~/.vaultkey/master.key
   if (fs.existsSync(DEFAULT_MASTER_KEY_FILE)) {
     try {
       const masterKey = readMasterKeyFromFile(DEFAULT_MASTER_KEY_FILE);
@@ -282,7 +239,28 @@ export const loadMasterKey = (
     }
   }
 
-  // 7. 自動生成してデフォルトファイルに保存
+  // 5. 環境変数 VAULTKEY_MASTER_KEY
+  if (process.env.VAULTKEY_MASTER_KEY) {
+    try {
+      validateMasterKey(process.env.VAULTKEY_MASTER_KEY);
+      logger.info(
+        'Master key loaded from environment variable VAULTKEY_MASTER_KEY',
+      );
+      return {
+        masterKey: process.env.VAULTKEY_MASTER_KEY,
+        source: 'env-direct',
+      };
+    } catch (error) {
+      if (error instanceof ValidationError) {
+        throw new ValidationError(
+          `Invalid master key from environment variable VAULTKEY_MASTER_KEY: ${error.message}`,
+        );
+      }
+      throw error;
+    }
+  }
+
+  // 6. 自動生成してデフォルトファイルに保存
   const masterKey = generateMasterKey();
   saveMasterKeyToFile(masterKey, DEFAULT_MASTER_KEY_FILE);
   logger.info(

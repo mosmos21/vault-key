@@ -19,8 +19,7 @@ VaultKey で使用できる環境変数の一覧です。
 
 | 環境変数 | 説明 | デフォルト値 | 必須 |
 |---------|------|-------------|-----|
-| `VAULTKEY_ENCRYPTION_KEY` | マスターキー (64 文字の 16 進数文字列) | 自動生成 | ❌ |
-| `VAULTKEY_MASTER_KEY` | マスターキー (互換性のため、`VAULTKEY_ENCRYPTION_KEY` と同じ) | 自動生成 | ❌ |
+| `VAULTKEY_MASTER_KEY` | マスターキー (64 文字の 16 進数文字列) | 自動生成 | ❌ |
 | `VAULTKEY_MASTER_KEY_FILE` | マスターキーファイルのパス | `~/.vaultkey/master.key` | ❌ |
 | `VAULTKEY_DB_PATH` | データベースファイルのパス | `~/.vaultkey/vaultkey.db` | ❌ |
 | `VAULTKEY_TOKEN` | アクセストークン | - | ❌ |
@@ -64,28 +63,22 @@ openssl rand -hex 32
    vaultkey secret list --master-key-file ./my-master.key
    ```
 
-3. **環境変数 `VAULTKEY_ENCRYPTION_KEY`** (直接指定)
-   ```bash
-   export VAULTKEY_ENCRYPTION_KEY="0123456789abcdef..."
-   vaultkey secret list
-   ```
-
-4. **環境変数 `VAULTKEY_MASTER_KEY`** (直接指定、互換性)
-   ```bash
-   export VAULTKEY_MASTER_KEY="0123456789abcdef..."
-   vaultkey secret list
-   ```
-
-5. **環境変数 `VAULTKEY_MASTER_KEY_FILE`** (ファイル指定)
+3. **環境変数 `VAULTKEY_MASTER_KEY_FILE`** (ファイル指定)
    ```bash
    export VAULTKEY_MASTER_KEY_FILE="./my-master.key"
    vaultkey secret list
    ```
 
-6. **デフォルトファイル** `~/.vaultkey/master.key`
+4. **デフォルトファイル** `~/.vaultkey/master.key`
    - マスターキーが指定されていない場合、このファイルから自動的に読み込まれます
 
-7. **自動生成**
+5. **環境変数 `VAULTKEY_MASTER_KEY`** (直接指定)
+   ```bash
+   export VAULTKEY_MASTER_KEY="0123456789abcdef..."
+   vaultkey secret list
+   ```
+
+6. **自動生成**
    - マスターキーが見つからない場合、自動的に生成されてデフォルトファイルに保存されます
 
 ### マスターキーの保存方法
@@ -109,7 +102,7 @@ vaultkey secret list
 
 ```bash
 # ~/.bashrc または ~/.zshrc に追加
-export VAULTKEY_ENCRYPTION_KEY="0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+export VAULTKEY_MASTER_KEY="0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
 ```
 
 #### 方法 3: カスタムファイルを使用
@@ -131,7 +124,7 @@ vaultkey secret list --master-key-file ~/.vaultkey/production.key
 
 ```bash
 # .env ファイル
-VAULTKEY_ENCRYPTION_KEY=0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+VAULTKEY_MASTER_KEY=0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
 VAULTKEY_DB_PATH=./dev.db
 VAULTKEY_LOG_LEVEL=DEBUG
 ```
@@ -314,7 +307,7 @@ vaultkey secret list
 
 ```bash
 # テスト用マスターキーを環境変数で設定
-export VAULTKEY_ENCRYPTION_KEY="0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+export VAULTKEY_MASTER_KEY="0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
 
 # テスト実行
 pnpm test
@@ -356,7 +349,7 @@ jobs:
       - run: pnpm install
       - run: pnpm test
         env:
-          VAULTKEY_ENCRYPTION_KEY: ${{ secrets.VAULTKEY_ENCRYPTION_KEY }}
+          VAULTKEY_MASTER_KEY: ${{ secrets.VAULTKEY_MASTER_KEY }}
 ```
 
 ## .env.example ファイル
@@ -368,7 +361,7 @@ jobs:
 
 # マスターキー (64 文字の 16 進数文字列)
 # 生成方法: node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
-VAULTKEY_ENCRYPTION_KEY=your-master-key-here
+VAULTKEY_MASTER_KEY=your-master-key-here
 
 # データベースファイルのパス (デフォルト: ~/.vaultkey/vaultkey.db)
 VAULTKEY_DB_PATH=~/.vaultkey/vaultkey.db

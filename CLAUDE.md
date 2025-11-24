@@ -247,14 +247,12 @@ Master key は以下の優先順位で読み込まれます:
 
 1. CLI オプション `--master-key` (直接指定)
 2. CLI オプション `--master-key-file` (ファイル指定)
-3. 環境変数 `VAULTKEY_ENCRYPTION_KEY` (直接指定)
-4. 環境変数 `VAULTKEY_MASTER_KEY` (直接指定、互換性)
-5. 環境変数 `VAULTKEY_MASTER_KEY_FILE` (ファイル指定)
-6. デフォルトファイル `~/.vaultkey/master.key`
-7. 自動生成 (デフォルトファイルに保存)
+3. 環境変数 `VAULTKEY_MASTER_KEY_FILE` (ファイル指定)
+4. デフォルトファイル `~/.vaultkey/master.key`
+5. 環境変数 `VAULTKEY_MASTER_KEY` (直接指定)
+6. 自動生成 (デフォルトファイルに保存)
 
-- `VAULTKEY_ENCRYPTION_KEY`: Master key (64 文字の 16 進数文字列)
-- `VAULTKEY_MASTER_KEY`: Master key (64 文字の 16 進数文字列、互換性のため)
+- `VAULTKEY_MASTER_KEY`: Master key (64 文字の 16 進数文字列)
 - `VAULTKEY_MASTER_KEY_FILE`: Master key ファイルのパス
 
 ### その他の環境変数

@@ -427,7 +427,7 @@ vaultkey secret list
 
 ```bash
 # マスターキー (一部のみ表示)
-echo ${VAULTKEY_ENCRYPTION_KEY:0:16}...
+echo ${VAULTKEY_MASTER_KEY:0:16}...
 
 # データベースパス
 echo $VAULTKEY_DB_PATH
@@ -502,7 +502,7 @@ pnpm install
 pnpm build
 
 # テスト実行
-export VAULTKEY_ENCRYPTION_KEY="0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+export VAULTKEY_MASTER_KEY="0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
 pnpm test
 
 # 特定のテストファイルのみ実行

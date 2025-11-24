@@ -281,8 +281,7 @@ CLI コマンドで使用できる環境変数:
 
 | 環境変数 | 説明 | デフォルト値 |
 |---------|------|-------------|
-| `VAULTKEY_ENCRYPTION_KEY` | マスターキー (64 文字の 16 進数文字列) | - |
-| `VAULTKEY_MASTER_KEY` | マスターキー (互換性のため、`VAULTKEY_ENCRYPTION_KEY` と同じ) | - |
+| `VAULTKEY_MASTER_KEY` | マスターキー (64 文字の 16 進数文字列) | - |
 | `VAULTKEY_MASTER_KEY_FILE` | マスターキーファイルのパス | `~/.vaultkey/master.key` |
 | `VAULTKEY_DB_PATH` | データベースファイルのパス | `~/.vaultkey/vaultkey.db` |
 | `VAULTKEY_TOKEN` | アクセストークン | - |

@@ -148,23 +148,7 @@ describe('masterKeyLoader', () => {
       );
     });
 
-    test('loads master key from environment variable VAULTKEY_ENCRYPTION_KEY', () => {
-      process.env.VAULTKEY_ENCRYPTION_KEY = TEST_MASTER_KEY;
-
-      const result = loadMasterKey();
-
-      expect(result.masterKey).toBe(TEST_MASTER_KEY);
-      expect(result.source).toBe('env-direct');
-      expect(result.filePath).toBeUndefined();
-      expect(console.log).toHaveBeenCalledWith(
-        expect.stringContaining(
-          'Master key loaded from environment variable VAULTKEY_ENCRYPTION_KEY',
-        ),
-      );
-    });
-
     test('loads master key from environment variable VAULTKEY_MASTER_KEY', () => {
-      delete process.env.VAULTKEY_ENCRYPTION_KEY;
       process.env.VAULTKEY_MASTER_KEY = TEST_MASTER_KEY;
 
       const result = loadMasterKey();
@@ -179,25 +163,46 @@ describe('masterKeyLoader', () => {
       );
     });
 
-    test('prefers VAULTKEY_ENCRYPTION_KEY over VAULTKEY_MASTER_KEY', () => {
+    test('VAULTKEY_MASTER_KEY_FILE has priority over VAULTKEY_MASTER_KEY', () => {
       const alternativeKey =
         '1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef';
-      process.env.VAULTKEY_ENCRYPTION_KEY = TEST_MASTER_KEY;
+      fs.writeFileSync(testMasterKeyFile, TEST_MASTER_KEY, { mode: 0o600 });
+      process.env.VAULTKEY_MASTER_KEY_FILE = testMasterKeyFile;
       process.env.VAULTKEY_MASTER_KEY = alternativeKey;
 
       const result = loadMasterKey();
 
       expect(result.masterKey).toBe(TEST_MASTER_KEY);
-      expect(result.source).toBe('env-direct');
+      expect(result.source).toBe('env-file');
       expect(console.log).toHaveBeenCalledWith(
         expect.stringContaining(
-          'Master key loaded from environment variable VAULTKEY_ENCRYPTION_KEY',
+          'Master key loaded from file specified by environment variable VAULTKEY_MASTER_KEY_FILE',
         ),
       );
     });
 
+    test('default file has priority over VAULTKEY_MASTER_KEY', () => {
+      const alternativeKey =
+        '1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef';
+      const dir = path.dirname(DEFAULT_MASTER_KEY_FILE);
+      if (!fs.existsSync(dir)) {
+        fs.mkdirSync(dir, { recursive: true });
+      }
+      fs.writeFileSync(DEFAULT_MASTER_KEY_FILE, TEST_MASTER_KEY, {
+        mode: 0o600,
+      });
+      process.env.VAULTKEY_MASTER_KEY = alternativeKey;
+
+      const result = loadMasterKey();
+
+      expect(result.masterKey).toBe(TEST_MASTER_KEY);
+      expect(result.source).toBe('default-file');
+      expect(console.log).toHaveBeenCalledWith(
+        expect.stringContaining('Master key loaded from default file'),
+      );
+    });
+
     test('loads master key from environment variable VAULTKEY_MASTER_KEY_FILE', () => {
-      delete process.env.VAULTKEY_ENCRYPTION_KEY;
       delete process.env.VAULTKEY_MASTER_KEY;
       fs.writeFileSync(testMasterKeyFile, TEST_MASTER_KEY, { mode: 0o600 });
       process.env.VAULTKEY_MASTER_KEY_FILE = testMasterKeyFile;
@@ -215,7 +220,6 @@ describe('masterKeyLoader', () => {
     });
 
     test('loads master key from default file', () => {
-      delete process.env.VAULTKEY_ENCRYPTION_KEY;
       delete process.env.VAULTKEY_MASTER_KEY;
       delete process.env.VAULTKEY_MASTER_KEY_FILE;
       const dir = path.dirname(DEFAULT_MASTER_KEY_FILE);
@@ -237,7 +241,6 @@ describe('masterKeyLoader', () => {
     });
 
     test('generates and saves master key if no other source is available', () => {
-      delete process.env.VAULTKEY_ENCRYPTION_KEY;
       delete process.env.VAULTKEY_MASTER_KEY;
       delete process.env.VAULTKEY_MASTER_KEY_FILE;
 
@@ -283,7 +286,7 @@ describe('masterKeyLoader', () => {
       const alternativeKey =
         '1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef';
       fs.writeFileSync(testMasterKeyFile, alternativeKey, { mode: 0o600 });
-      process.env.VAULTKEY_ENCRYPTION_KEY = alternativeKey;
+      process.env.VAULTKEY_MASTER_KEY = alternativeKey;
 
       const result = loadMasterKey({ masterKey: TEST_MASTER_KEY });
 
@@ -295,7 +298,7 @@ describe('masterKeyLoader', () => {
       const alternativeKey =
         '1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef';
       fs.writeFileSync(testMasterKeyFile, TEST_MASTER_KEY, { mode: 0o600 });
-      process.env.VAULTKEY_ENCRYPTION_KEY = alternativeKey;
+      process.env.VAULTKEY_MASTER_KEY = alternativeKey;
 
       const result = loadMasterKey({ masterKeyFile: testMasterKeyFile });
 
