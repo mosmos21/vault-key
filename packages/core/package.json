@@ -1,6 +1,6 @@
 {
   "name": "@mosmos_21/vault-key-core",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "VaultKey のコアライブラリ。機密情報の暗号化保存、WebAuthn Passkey 認証、監査ログなどの機能を提供します。",
   "type": "module",
   "main": "dist/index.cjs",
