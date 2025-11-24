@@ -1,5 +1,7 @@
 # 5. API 設計
 
+> **注意**: このドキュメントは設計書です。一部の機能は現在のバージョン (v0.1.2) では未実装です。実装状況については [CLI リファレンス](../CLI_REFERENCE.md) を参照してください。
+
 ## 5.1 ライブラリ API
 
 ### 5.1.1 VaultKeyClient クラス
@@ -148,6 +150,8 @@ const keys = await client.listSecrets({
 - `AuthenticationError`: トークンが無効または期限切れ
 
 ### 5.1.3 有効期限管理 API (Phase 2)
+
+> **実装状況 (v0.1.2)**: コア機能は実装済みですが、CLI コマンドは未実装です。
 
 #### listExpiringSecrets()
 
@@ -405,10 +409,16 @@ vaultkey init
 
 #### ユーザー登録
 
-```bash
-vaultkey user register alice
+> **実装状況 (v0.1.2)**: コマンドは `vaultkey user register` として実装済みですが、ユーザー ID は対話的プロンプトで入力します。Passkey 認証は未実装 (ダミー認証を使用)。
 
-# 出力:
+```bash
+vaultkey user register
+
+# 実際の動作:
+# ユーザー ID を入力してください: alice
+# ユーザー "alice" を登録しました
+
+# 将来の実装 (v0.2.0):
 # 認証サーバーを起動しました: http://localhost:5432
 # ブラウザを開きます...
 # Passkey を作成してください。
@@ -416,6 +426,8 @@ vaultkey user register alice
 ```
 
 #### ユーザー認証・トークン発行
+
+> **実装状況 (v0.1.2)**: コマンドは `vaultkey user login` として実装済みです。Passkey 認証は未実装 (ダミー認証を使用)。
 
 ```bash
 # デフォルト: ブラウザ自動起動
@@ -445,13 +457,15 @@ vaultkey user logout
 
 #### 機密情報保存
 
-```bash
-# Phase 1: 値を引数で指定
-vaultkey secret set apiKeyOpenai "sk-1234567890abcdef"
+> **実装状況 (v0.1.2)**: コマンドは `vaultkey secret set <key>` として実装済みです。値は対話的プロンプトで入力します。有効期限の指定は未実装。
 
-# Phase 3: 対話的入力
+```bash
+# 実際の動作:
 vaultkey secret set apiKeyOpenai
-# Enter value: ******** (マスク表示)
+# 機密情報の値を入力してください: ******** (マスク表示)
+
+# 将来の実装 (設計案):
+# vaultkey secret set apiKeyOpenai "sk-1234567890abcdef"
 
 # 有効期限を指定 (Phase 2)
 vaultkey secret set apiKeyOpenai --expires-in 30d
@@ -538,8 +552,10 @@ vaultkey secret list --pattern "apiKey*"
 
 #### 有効期限管理 (Phase 2)
 
+> **実装状況 (v0.1.2)**: これらのコマンドは未実装です。コア機能 (有効期限のフィルタリング) は実装済みですが、CLI コマンドは v0.2.0 で実装予定です。
+
 ```bash
-# 有効期限切れ間近の機密情報一覧 (デフォルト: 7 日以内)
+# 有効期限切れ間近の機密情報一覧 (デフォルト: 7 日以内) - 未実装
 vaultkey secret list-expiring
 
 # 出力:
@@ -584,8 +600,10 @@ vaultkey token list
 
 #### 監査ログ検索 (Phase 3)
 
+> **実装状況 (v0.1.2)**: 監査ログ機能は未実装です。`auditLogs` テーブルの定義のみ存在します。v0.2.0 で実装予定です。
+
 ```bash
-# すべての監査ログを表示
+# すべての監査ログを表示 - 未実装
 vaultkey audit search
 
 # ユーザーでフィルタリング
