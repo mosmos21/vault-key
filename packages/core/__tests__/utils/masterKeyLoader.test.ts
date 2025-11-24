@@ -100,7 +100,7 @@ describe('masterKeyLoader', () => {
 
       expect(result).toBe(false);
       expect(console.warn).toHaveBeenCalledWith(
-        expect.stringContaining('WARNING: Master key file'),
+        expect.stringContaining('Master key file'),
       );
     });
 
@@ -109,7 +109,7 @@ describe('masterKeyLoader', () => {
 
       expect(result).toBe(false);
       expect(console.warn).toHaveBeenCalledWith(
-        expect.stringContaining('WARNING: Failed to check file permissions'),
+        expect.stringContaining('Failed to check file permissions'),
       );
     });
   });
@@ -122,7 +122,9 @@ describe('masterKeyLoader', () => {
       expect(result.source).toBe('option');
       expect(result.filePath).toBeUndefined();
       expect(console.log).toHaveBeenCalledWith(
-        'Master key loaded from CLI option --master-key',
+        expect.stringContaining(
+          'Master key loaded from CLI option --master-key',
+        ),
       );
     });
 
@@ -150,11 +152,14 @@ describe('masterKeyLoader', () => {
       expect(result.source).toBe('env-direct');
       expect(result.filePath).toBeUndefined();
       expect(console.log).toHaveBeenCalledWith(
-        'Master key loaded from environment variable VAULTKEY_ENCRYPTION_KEY',
+        expect.stringContaining(
+          'Master key loaded from environment variable VAULTKEY_ENCRYPTION_KEY',
+        ),
       );
     });
 
     test('loads master key from environment variable VAULTKEY_MASTER_KEY', () => {
+      delete process.env.VAULTKEY_ENCRYPTION_KEY;
       process.env.VAULTKEY_MASTER_KEY = TEST_MASTER_KEY;
 
       const result = loadMasterKey();
@@ -163,7 +168,9 @@ describe('masterKeyLoader', () => {
       expect(result.source).toBe('env-direct');
       expect(result.filePath).toBeUndefined();
       expect(console.log).toHaveBeenCalledWith(
-        'Master key loaded from environment variable VAULTKEY_MASTER_KEY',
+        expect.stringContaining(
+          'Master key loaded from environment variable VAULTKEY_MASTER_KEY',
+        ),
       );
     });
 
@@ -178,11 +185,15 @@ describe('masterKeyLoader', () => {
       expect(result.masterKey).toBe(TEST_MASTER_KEY);
       expect(result.source).toBe('env-direct');
       expect(console.log).toHaveBeenCalledWith(
-        'Master key loaded from environment variable VAULTKEY_ENCRYPTION_KEY',
+        expect.stringContaining(
+          'Master key loaded from environment variable VAULTKEY_ENCRYPTION_KEY',
+        ),
       );
     });
 
     test('loads master key from environment variable VAULTKEY_MASTER_KEY_FILE', () => {
+      delete process.env.VAULTKEY_ENCRYPTION_KEY;
+      delete process.env.VAULTKEY_MASTER_KEY;
       fs.writeFileSync(testMasterKeyFile, TEST_MASTER_KEY, { mode: 0o600 });
       process.env.VAULTKEY_MASTER_KEY_FILE = testMasterKeyFile;
 
@@ -199,6 +210,9 @@ describe('masterKeyLoader', () => {
     });
 
     test('loads master key from default file', () => {
+      delete process.env.VAULTKEY_ENCRYPTION_KEY;
+      delete process.env.VAULTKEY_MASTER_KEY;
+      delete process.env.VAULTKEY_MASTER_KEY_FILE;
       const dir = path.dirname(DEFAULT_MASTER_KEY_FILE);
       if (!fs.existsSync(dir)) {
         fs.mkdirSync(dir, { recursive: true });
@@ -218,6 +232,10 @@ describe('masterKeyLoader', () => {
     });
 
     test('generates and saves master key if no other source is available', () => {
+      delete process.env.VAULTKEY_ENCRYPTION_KEY;
+      delete process.env.VAULTKEY_MASTER_KEY;
+      delete process.env.VAULTKEY_MASTER_KEY_FILE;
+
       const result = loadMasterKey();
 
       expect(result.masterKey).toHaveLength(64);

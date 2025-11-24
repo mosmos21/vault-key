@@ -14,4 +14,10 @@ export type VaultKeyConfig = {
   tokenTtl: number;
   /** Maximum number of tokens per user */
   maxTokensPerUser: number;
+  /** Log file output enabled */
+  logFileEnabled: boolean;
+  /** Log file path */
+  logFilePath: string;
+  /** Console output enabled */
+  logConsoleEnabled: boolean;
 };

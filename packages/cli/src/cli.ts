@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import { Command } from 'commander';
 import { config } from 'dotenv';
+import { logger } from '@mosmos_21/vault-key-core';
 import {
   createInitCommand,
   createUserCommand,
@@ -14,7 +15,7 @@ process.on('warning', (warning) => {
   if (warning.name === 'ExperimentalWarning') {
     return;
   }
-  console.warn(warning);
+  logger.warning(warning.message);
 });
 
 // 環境変数を読み込み (ログメッセージを抑制)

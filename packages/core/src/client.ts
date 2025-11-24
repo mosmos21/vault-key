@@ -1,16 +1,21 @@
 import { DatabaseSync } from 'node:sqlite';
-import type { VaultKeyConfig, DecryptedSecret, Token } from './types';
-import { loadConfig } from './config';
-import { createConnection, closeConnection } from './database';
-import { authenticateDummy } from './auth/dummyAuth';
-import { issueToken, verifyToken, invalidateToken } from './auth/tokenManager';
+import type { VaultKeyConfig, DecryptedSecret, Token } from '@core/types';
+import { loadConfig } from '@core/config';
+import { createConnection, closeConnection } from '@core/database';
+import { authenticateDummy } from '@core/auth/dummyAuth';
+import {
+  issueToken,
+  verifyToken,
+  invalidateToken,
+} from '@core/auth/tokenManager';
 import {
   saveSecret,
   retrieveSecret,
   removeSecret,
   listAllSecrets,
-} from './secrets/secretsService';
-import { listUserTokens } from './database/repositories/tokenRepository';
+} from '@core/secrets/secretsService';
+import { listUserTokens } from '@core/database/repositories/tokenRepository';
+import { logger } from '@core/logger';
 
 // ExperimentalWarning を抑制
 process.removeAllListeners('warning');
@@ -18,7 +23,7 @@ process.on('warning', (warning) => {
   if (warning.name === 'ExperimentalWarning') {
     return;
   }
-  console.warn(warning);
+  logger.warning(warning.message);
 });
 
 /**
