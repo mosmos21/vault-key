@@ -11,7 +11,9 @@ import {
 /**
  * Parse and validate transports JSON from database
  */
-const parseTransports = (transportsJson: string | null): Passkey['transports'] => {
+const parseTransports = (
+  transportsJson: string | null,
+): Passkey['transports'] => {
   if (!transportsJson) {
     return null;
   }

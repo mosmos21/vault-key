@@ -38,15 +38,7 @@ export type PasskeyRow = z.infer<typeof passkeyRowSchema>;
  * WebAuthn transports schema for parsing JSON from database
  */
 export const authenticatorTransportsSchema = z.array(
-  z.enum([
-    'usb',
-    'nfc',
-    'ble',
-    'smart-card',
-    'hybrid',
-    'internal',
-    'cable',
-  ]),
+  z.enum(['usb', 'nfc', 'ble', 'smart-card', 'hybrid', 'internal', 'cable']),
 );
 
 export type AuthenticatorTransports = z.infer<
