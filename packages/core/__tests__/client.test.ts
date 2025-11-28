@@ -1,16 +1,31 @@
+import fs from 'node:fs';
+import path from 'node:path';
+import os from 'node:os';
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { VaultKeyClient } from '@core/client';
 import { generateMasterKey } from '@core/crypto/encryption';
 import { AuthenticationError, NotFoundError } from '@core/utils/errors';
+import { createConnection, closeConnection, createUser } from '@core/database';
+import type { DatabaseSync } from 'node:sqlite';
 
 describe('VaultKeyClient', () => {
   let client: VaultKeyClient;
   let masterKey: string;
+  let dbPath: string;
+  let setupDb: DatabaseSync;
+
+  const setupTestUser = (userId: string) => {
+    createUser(setupDb, { userId });
+  };
 
   beforeEach(() => {
     masterKey = generateMasterKey();
+    dbPath = path.join(os.tmpdir(), `vaultkey-test-${Date.now()}.db`);
+
+    setupDb = createConnection(dbPath);
+
     client = new VaultKeyClient({
-      dbPath: ':memory:',
+      dbPath,
       masterKey,
       tokenTtl: 3600,
       maxTokensPerUser: 5,
@@ -19,27 +34,16 @@ describe('VaultKeyClient', () => {
 
   afterEach(() => {
     client.close();
-  });
-
-  describe('registerUser()', () => {
-    it('should register a new user', () => {
-      const userId = 'test-user';
-
-      expect(() => client.registerUser(userId)).not.toThrow();
-    });
-
-    it('should allow registering the same user multiple times (idempotent)', () => {
-      const userId = 'test-user';
-
-      client.registerUser(userId);
-      expect(() => client.registerUser(userId)).not.toThrow();
-    });
+    closeConnection(setupDb);
+    if (fs.existsSync(dbPath)) {
+      fs.unlinkSync(dbPath);
+    }
   });
 
   describe('issueToken()', () => {
     it('should issue a token for a registered user', () => {
       const userId = 'test-user';
-      client.registerUser(userId);
+      setupTestUser(userId);
 
       const result = client.issueToken(userId);
 
@@ -52,7 +56,7 @@ describe('VaultKeyClient', () => {
 
     it('should issue a token with custom TTL', () => {
       const userId = 'test-user';
-      client.registerUser(userId);
+      setupTestUser(userId);
 
       const customTtl = 7200;
       const result = client.issueToken(userId, customTtl);
@@ -72,7 +76,7 @@ describe('VaultKeyClient', () => {
   describe('storeSecret() / getSecret()', () => {
     it('should store and retrieve a secret', () => {
       const userId = 'test-user';
-      client.registerUser(userId);
+      setupTestUser(userId);
       const { token } = client.issueToken(userId);
 
       const key = 'api-key';
@@ -90,7 +94,7 @@ describe('VaultKeyClient', () => {
 
     it('should store a secret with expiration', () => {
       const userId = 'test-user';
-      client.registerUser(userId);
+      setupTestUser(userId);
       const { token } = client.issueToken(userId);
 
       const key = 'api-key';
@@ -105,7 +109,7 @@ describe('VaultKeyClient', () => {
 
     it('should throw NotFoundError when retrieving a non-existent secret', () => {
       const userId = 'test-user';
-      client.registerUser(userId);
+      setupTestUser(userId);
       const { token } = client.issueToken(userId);
 
       expect(() => client.getSecret('non-existent', token)).toThrow(
@@ -123,7 +127,7 @@ describe('VaultKeyClient', () => {
   describe('updateSecret()', () => {
     it('should update an existing secret', () => {
       const userId = 'test-user';
-      client.registerUser(userId);
+      setupTestUser(userId);
       const { token } = client.issueToken(userId);
 
       const key = 'api-key';
@@ -139,7 +143,7 @@ describe('VaultKeyClient', () => {
 
     it('should update expiration date', () => {
       const userId = 'test-user';
-      client.registerUser(userId);
+      setupTestUser(userId);
       const { token } = client.issueToken(userId);
 
       const key = 'api-key';
@@ -157,7 +161,7 @@ describe('VaultKeyClient', () => {
   describe('deleteSecret()', () => {
     it('should delete a secret', () => {
       const userId = 'test-user';
-      client.registerUser(userId);
+      setupTestUser(userId);
       const { token } = client.issueToken(userId);
 
       const key = 'api-key';
@@ -171,7 +175,7 @@ describe('VaultKeyClient', () => {
 
     it('should throw NotFoundError when deleting a non-existent secret', () => {
       const userId = 'test-user';
-      client.registerUser(userId);
+      setupTestUser(userId);
       const { token } = client.issueToken(userId);
 
       expect(() => client.deleteSecret('non-existent', token)).toThrow(
@@ -183,7 +187,7 @@ describe('VaultKeyClient', () => {
   describe('listSecrets()', () => {
     it('should list all secrets for a user', () => {
       const userId = 'test-user';
-      client.registerUser(userId);
+      setupTestUser(userId);
       const { token } = client.issueToken(userId);
 
       client.storeSecret('key1', 'value1', token);
@@ -199,7 +203,7 @@ describe('VaultKeyClient', () => {
 
     it('should list secrets matching a pattern', () => {
       const userId = 'test-user';
-      client.registerUser(userId);
+      setupTestUser(userId);
       const { token } = client.issueToken(userId);
 
       client.storeSecret('apiKeyOpenai', 'value1', token);
@@ -215,7 +219,7 @@ describe('VaultKeyClient', () => {
 
     it('should return empty array when no secrets exist', () => {
       const userId = 'test-user';
-      client.registerUser(userId);
+      setupTestUser(userId);
       const { token } = client.issueToken(userId);
 
       const secrets = client.listSecrets(token);
@@ -226,7 +230,7 @@ describe('VaultKeyClient', () => {
   describe('revokeToken()', () => {
     it('should revoke a token', () => {
       const userId = 'test-user';
-      client.registerUser(userId);
+      setupTestUser(userId);
       const { token } = client.issueToken(userId);
 
       client.storeSecret('key', 'value', token);
@@ -240,7 +244,7 @@ describe('VaultKeyClient', () => {
   describe('listTokens()', () => {
     it('should list all active tokens for a user', () => {
       const userId = 'test-user';
-      client.registerUser(userId);
+      setupTestUser(userId);
 
       const token1 = client.issueToken(userId);
       const token2 = client.issueToken(userId);
@@ -259,7 +263,7 @@ describe('VaultKeyClient', () => {
 
     it('should not include revoked tokens', () => {
       const userId = 'test-user';
-      client.registerUser(userId);
+      setupTestUser(userId);
 
       const token1 = client.issueToken(userId);
       const token2 = client.issueToken(userId);
@@ -281,8 +285,8 @@ describe('VaultKeyClient', () => {
       const user1 = 'user1';
       const user2 = 'user2';
 
-      client.registerUser(user1);
-      client.registerUser(user2);
+      setupTestUser(user1);
+      setupTestUser(user2);
 
       const token1 = client.issueToken(user1).token;
       const token2 = client.issueToken(user2).token;
@@ -301,8 +305,8 @@ describe('VaultKeyClient', () => {
       const user1 = 'user1';
       const user2 = 'user2';
 
-      client.registerUser(user1);
-      client.registerUser(user2);
+      setupTestUser(user1);
+      setupTestUser(user2);
 
       const token1 = client.issueToken(user1).token;
       const token2 = client.issueToken(user2).token;
@@ -318,7 +322,7 @@ describe('VaultKeyClient', () => {
   describe('Token limit', () => {
     it('should delete oldest token when limit is reached', () => {
       const userId = 'test-user';
-      client.registerUser(userId);
+      setupTestUser(userId);
 
       const tokens = [];
       for (let i = 0; i < 6; i++) {
@@ -349,12 +353,20 @@ describe('VaultKeyClient', () => {
 
   describe('close()', () => {
     it('should close database connection', () => {
+      const testDbPath = path.join(
+        os.tmpdir(),
+        `vaultkey-close-test-${Date.now()}.db`,
+      );
       const testClient = new VaultKeyClient({
-        dbPath: ':memory:',
+        dbPath: testDbPath,
         masterKey: generateMasterKey(),
       });
 
       expect(() => testClient.close()).not.toThrow();
+
+      if (fs.existsSync(testDbPath)) {
+        fs.unlinkSync(testDbPath);
+      }
     });
   });
 });

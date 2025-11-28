@@ -1,13 +1,11 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { DatabaseSync } from 'node:sqlite';
-import { createConnection, closeConnection } from '@core/database';
-import { authenticateDummy } from '@core/auth/dummyAuth';
+import { createConnection, closeConnection, createUser } from '@core/database';
 import {
   issueToken,
   verifyToken,
   invalidateToken,
 } from '@core/auth/tokenManager';
-import { getUserById } from '@core/database/repositories/userRepository';
 import { AuthenticationError } from '@core/utils/errors';
 
 describe('Authentication', () => {
@@ -21,46 +19,13 @@ describe('Authentication', () => {
     closeConnection(db);
   });
 
-  describe('authenticateDummy', () => {
-    it('should create new user if not exists', () => {
-      const userId = 'test-user';
-      const result = authenticateDummy(db, userId);
-
-      expect(result).toBe(userId);
-
-      const user = getUserById(db, userId);
-      expect(user).not.toBeNull();
-      expect(user?.userId).toBe(userId);
-      expect(user?.credentialId).toBe(`dummy-${userId}`);
-    });
-
-    it('should return existing user if already exists', () => {
-      const userId = 'test-user';
-
-      authenticateDummy(db, userId);
-      const result = authenticateDummy(db, userId);
-
-      expect(result).toBe(userId);
-
-      const users = db
-        .prepare('SELECT COUNT(*) as count FROM users WHERE userId = ?')
-        .get(userId) as { count: number };
-      expect(users.count).toBe(1);
-    });
-
-    it('should throw error if userId is empty', () => {
-      expect(() => authenticateDummy(db, '')).toThrow(AuthenticationError);
-      expect(() => authenticateDummy(db, '  ')).toThrow(AuthenticationError);
-    });
-  });
-
   describe('Token Management', () => {
     const userId = 'test-user';
     const tokenTtl = 3600;
     const maxTokensPerUser = 5;
 
     beforeEach(() => {
-      authenticateDummy(db, userId);
+      createUser(db, { userId });
     });
 
     describe('issueToken', () => {

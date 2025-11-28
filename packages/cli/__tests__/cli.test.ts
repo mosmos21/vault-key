@@ -3,11 +3,14 @@ import { existsSync, unlinkSync, mkdirSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { execa } from 'execa';
+import { createConnection, closeConnection, createUser } from '@core/database';
+import { issueToken } from '@core/auth/tokenManager';
+import type { DatabaseSync } from 'node:sqlite';
 
 const TEST_DB_DIR = join(tmpdir(), 'vaultkey-cli-test');
 const TEST_DB_PATH = join(TEST_DB_DIR, 'test.db');
 const CLI_PATH = join(__dirname, '../src/cli.ts');
-// テスト用の固定マスターキー (32バイト)
+// テスト用の固定マスターキー (32 バイト)
 const TEST_MASTER_KEY =
   '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
 
@@ -19,6 +22,18 @@ const runCLI = (args: string[], options?: { input?: string }) => {
     },
     extendEnv: true,
   });
+};
+
+/**
+ * テスト用にユーザーとトークンを直接データベースに作成するヘルパー
+ */
+const setupTestUserAndToken = (
+  db: DatabaseSync,
+  userId: string,
+): { token: string } => {
+  createUser(db, { userId });
+  const result = issueToken(db, userId, 3600, 5);
+  return { token: result.token };
 };
 
 describe('CLI Integration Tests', () => {
@@ -51,54 +66,28 @@ describe('CLI Integration Tests', () => {
       await runCLI(['init', '--db-path', TEST_DB_PATH]);
     });
 
-    it('ユーザー登録ができる', async () => {
-      const { stdout } = await runCLI(
-        ['user', 'register', '--db-path', TEST_DB_PATH],
-        {
-          input: 'test-user\n',
-        },
-      );
-
-      expect(stdout).toContain('ユーザー "test-user" を登録しました');
+    // Passkey 認証はブラウザ操作が必要なため、自動テストはスキップ
+    it.skip('ユーザー登録ができる (要ブラウザ操作)', async () => {
+      // 注意: Passkey 登録はブラウザでの WebAuthn 操作が必要
     });
 
-    it('ログインしてトークンを取得できる', async () => {
-      await runCLI(['user', 'register', '--db-path', TEST_DB_PATH], {
-        input: 'test-user\n',
-      });
-
-      const { stdout } = await runCLI(
-        ['user', 'login', '--db-path', TEST_DB_PATH],
-        {
-          input: 'test-user\n',
-        },
-      );
-
-      expect(stdout).toContain('ログインしました');
-      expect(stdout).toContain('トークン:');
+    it.skip('ログインしてトークンを取得できる (要ブラウザ操作)', async () => {
+      // 注意: Passkey 認証はブラウザでの WebAuthn 操作が必要
     });
   });
 
   describe('secret コマンド', () => {
     let token: string;
+    let db: DatabaseSync;
 
     beforeEach(async () => {
       await runCLI(['init', '--db-path', TEST_DB_PATH]);
-      await runCLI(['user', 'register', '--db-path', TEST_DB_PATH], {
-        input: 'test-user\n',
-      });
 
-      const { stdout } = await runCLI(
-        ['user', 'login', '--db-path', TEST_DB_PATH],
-        {
-          input: 'test-user\n',
-        },
-      );
-
-      const match = stdout.match(/トークン: (.+)/);
-      if (match?.[1]) {
-        token = match[1].trim();
-      }
+      // 直接データベースにアクセスしてユーザーとトークンを作成
+      db = createConnection(TEST_DB_PATH);
+      const result = setupTestUserAndToken(db, 'test-user');
+      token = result.token;
+      closeConnection(db);
     });
 
     it('機密情報を保存できる', async () => {
@@ -256,24 +245,16 @@ describe('CLI Integration Tests', () => {
 
   describe('token コマンド', () => {
     let token: string;
+    let db: DatabaseSync;
 
     beforeEach(async () => {
       await runCLI(['init', '--db-path', TEST_DB_PATH]);
-      await runCLI(['user', 'register', '--db-path', TEST_DB_PATH], {
-        input: 'test-user\n',
-      });
 
-      const { stdout } = await runCLI(
-        ['user', 'login', '--db-path', TEST_DB_PATH],
-        {
-          input: 'test-user\n',
-        },
-      );
-
-      const match = stdout.match(/トークン: (.+)/);
-      if (match?.[1]) {
-        token = match[1].trim();
-      }
+      // 直接データベースにアクセスしてユーザーとトークンを作成
+      db = createConnection(TEST_DB_PATH);
+      const result = setupTestUserAndToken(db, 'test-user');
+      token = result.token;
+      closeConnection(db);
     });
 
     it('トークン一覧を取得できる', async () => {

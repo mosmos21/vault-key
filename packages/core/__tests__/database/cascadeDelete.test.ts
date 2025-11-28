@@ -23,11 +23,7 @@ describe('CASCADE DELETE', () => {
   });
 
   it('should delete user secrets when user is deleted', () => {
-    createUser(db, {
-      userId: 'user1',
-      credentialId: 'cred1',
-      publicKey: '{}',
-    });
+    createUser(db, { userId: 'user1' });
     createSecret(db, {
       userId: 'user1',
       key: 'key1',
@@ -43,11 +39,7 @@ describe('CASCADE DELETE', () => {
   });
 
   it('should delete user tokens when user is deleted', () => {
-    createUser(db, {
-      userId: 'user1',
-      credentialId: 'cred1',
-      publicKey: '{}',
-    });
+    createUser(db, { userId: 'user1' });
     createToken(db, {
       tokenHash: 'hash1',
       userId: 'user1',

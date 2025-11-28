@@ -1,7 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { DatabaseSync } from 'node:sqlite';
-import { createConnection, closeConnection } from '@core/database';
-import { authenticateDummy } from '@core/auth/dummyAuth';
+import { createConnection, closeConnection, createUser } from '@core/database';
 import {
   issueToken,
   verifyToken,
@@ -37,7 +36,7 @@ describe('Integration Tests', () => {
       const secretKey = 'api-key';
       const secretValue = 'super-secret-value';
 
-      authenticateDummy(db, userId);
+      createUser(db, { userId });
 
       const { token } = issueToken(db, userId, tokenTtl, maxTokensPerUser);
 
@@ -63,7 +62,7 @@ describe('Integration Tests', () => {
         { key: 'password', value: 'my-password' },
       ];
 
-      authenticateDummy(db, userId);
+      createUser(db, { userId });
       const { token } = issueToken(db, userId, tokenTtl, maxTokensPerUser);
       const verifiedUserId = verifyToken(db, token);
 
@@ -87,7 +86,7 @@ describe('Integration Tests', () => {
       const secretKey = 'api-key';
       const secretValue = 'secret-value';
 
-      authenticateDummy(db, userId);
+      createUser(db, { userId });
       const { token } = issueToken(db, userId, tokenTtl, maxTokensPerUser);
 
       saveSecret(db, userId, secretKey, secretValue, masterKey);
@@ -100,7 +99,7 @@ describe('Integration Tests', () => {
     it('should allow new token after invalidation', () => {
       const userId = 'test-user';
 
-      authenticateDummy(db, userId);
+      createUser(db, { userId });
       const token1 = issueToken(db, userId, tokenTtl, maxTokensPerUser);
       invalidateToken(db, token1.token);
 
@@ -119,8 +118,8 @@ describe('Integration Tests', () => {
       const secret1Value = 'user1-secret';
       const secret2Value = 'user2-secret';
 
-      authenticateDummy(db, user1);
-      authenticateDummy(db, user2);
+      createUser(db, { userId: user1 });
+      createUser(db, { userId: user2 });
 
       saveSecret(db, user1, secretKey, secret1Value, masterKey);
       saveSecret(db, user2, secretKey, secret2Value, masterKey);
@@ -137,8 +136,8 @@ describe('Integration Tests', () => {
       const user2 = 'user-2';
       const secretKey = 'user1-secret';
 
-      authenticateDummy(db, user1);
-      authenticateDummy(db, user2);
+      createUser(db, { userId: user1 });
+      createUser(db, { userId: user2 });
 
       saveSecret(db, user1, secretKey, 'secret-value', masterKey);
 
@@ -152,8 +151,8 @@ describe('Integration Tests', () => {
       const user2 = 'user-2';
       const secretKey = 'user1-secret';
 
-      authenticateDummy(db, user1);
-      authenticateDummy(db, user2);
+      createUser(db, { userId: user1 });
+      createUser(db, { userId: user2 });
 
       saveSecret(db, user1, secretKey, 'secret-value', masterKey);
 
@@ -167,8 +166,8 @@ describe('Integration Tests', () => {
       const user1 = 'user-1';
       const user2 = 'user-2';
 
-      authenticateDummy(db, user1);
-      authenticateDummy(db, user2);
+      createUser(db, { userId: user1 });
+      createUser(db, { userId: user2 });
 
       saveSecret(db, user1, 'user1-key1', 'value1', masterKey);
       saveSecret(db, user1, 'user1-key2', 'value2', masterKey);
@@ -192,7 +191,7 @@ describe('Integration Tests', () => {
       const secretValue = 'temporary-value';
       const expiresAt = new Date(Date.now() - 1000).toISOString();
 
-      authenticateDummy(db, userId);
+      createUser(db, { userId });
       saveSecret(db, userId, secretKey, secretValue, masterKey, expiresAt);
 
       expect(() => retrieveSecret(db, userId, secretKey, masterKey)).toThrow(
@@ -209,7 +208,7 @@ describe('Integration Tests', () => {
       const secretValue = 'temporary-value';
       const expiresAt = new Date(Date.now() + 3600 * 1000).toISOString();
 
-      authenticateDummy(db, userId);
+      createUser(db, { userId });
       saveSecret(db, userId, secretKey, secretValue, masterKey, expiresAt);
 
       const retrieved = retrieveSecret(db, userId, secretKey, masterKey);
@@ -221,7 +220,7 @@ describe('Integration Tests', () => {
       const expiredAt = new Date(Date.now() - 1000).toISOString();
       const futureAt = new Date(Date.now() + 3600 * 1000).toISOString();
 
-      authenticateDummy(db, userId);
+      createUser(db, { userId });
       saveSecret(db, userId, 'expired-1', 'value1', masterKey, expiredAt);
       saveSecret(db, userId, 'expired-2', 'value2', masterKey, expiredAt);
       saveSecret(db, userId, 'valid-1', 'value3', masterKey, futureAt);
@@ -238,7 +237,7 @@ describe('Integration Tests', () => {
       const userId = 'test-user';
       const limit = 3;
 
-      authenticateDummy(db, userId);
+      createUser(db, { userId });
 
       const tokens: Array<{
         token: string;
@@ -277,8 +276,8 @@ describe('Integration Tests', () => {
       const user2 = 'user-2';
       const limit = 2;
 
-      authenticateDummy(db, user1);
-      authenticateDummy(db, user2);
+      createUser(db, { userId: user1 });
+      createUser(db, { userId: user2 });
 
       const user1Tokens: Array<{
         token: string;
