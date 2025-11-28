@@ -1,5 +1,6 @@
 export type { VaultKeyConfig } from './config';
 export type { User, CreateUserInput } from './user';
+export type { Passkey, CreatePasskeyInput } from './passkey';
 export type {
   Secret,
   CreateSecretInput,

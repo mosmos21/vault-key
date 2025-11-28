@@ -1,16 +1,32 @@
--- VaultKey 初期スキーマ
--- すべてのカラム名は camelCase を使用
+-- VaultKey initial schema
+-- All column names use camelCase
 
--- ユーザーテーブル
+-- Users table
 CREATE TABLE IF NOT EXISTS users (
   userId TEXT PRIMARY KEY,
-  credentialId TEXT NOT NULL UNIQUE,
-  publicKey TEXT NOT NULL,
   createdAt TEXT NOT NULL DEFAULT (datetime('now')),
-  lastLogin TEXT
+  lastLoginAt TEXT,
+  CHECK (length(userId) > 0)
 );
 
--- 機密情報テーブル
+-- Passkeys table
+CREATE TABLE IF NOT EXISTS passkeys (
+  id TEXT PRIMARY KEY,
+  userId TEXT NOT NULL,
+  credentialId TEXT NOT NULL UNIQUE,
+  publicKey TEXT NOT NULL,
+  counter INTEGER NOT NULL DEFAULT 0,
+  deviceType TEXT NOT NULL,
+  backedUp INTEGER NOT NULL DEFAULT 0,
+  transports TEXT,
+  createdAt TEXT NOT NULL DEFAULT (datetime('now')),
+  lastUsedAt TEXT,
+  FOREIGN KEY (userId) REFERENCES users(userId) ON DELETE CASCADE,
+  CHECK (deviceType IN ('singleDevice', 'multiDevice')),
+  CHECK (backedUp IN (0, 1))
+);
+
+-- Secrets table
 CREATE TABLE IF NOT EXISTS secrets (
   userId TEXT NOT NULL,
   key TEXT NOT NULL,
@@ -26,7 +42,7 @@ CREATE TABLE IF NOT EXISTS secrets (
   FOREIGN KEY (userId) REFERENCES users(userId) ON DELETE CASCADE
 );
 
--- トークンテーブル
+-- Tokens table
 CREATE TABLE IF NOT EXISTS tokens (
   tokenHash TEXT PRIMARY KEY,
   userId TEXT NOT NULL,
@@ -38,7 +54,9 @@ CREATE TABLE IF NOT EXISTS tokens (
   FOREIGN KEY (userId) REFERENCES users(userId) ON DELETE CASCADE
 );
 
--- インデックス作成
+-- Indexes
+CREATE INDEX IF NOT EXISTS idx_passkeys_userId ON passkeys(userId);
+CREATE INDEX IF NOT EXISTS idx_passkeys_credentialId ON passkeys(credentialId);
 CREATE INDEX IF NOT EXISTS idx_secrets_userId ON secrets(userId);
 CREATE INDEX IF NOT EXISTS idx_secrets_expiresAt ON secrets(expiresAt);
 CREATE INDEX IF NOT EXISTS idx_tokens_userId ON tokens(userId);

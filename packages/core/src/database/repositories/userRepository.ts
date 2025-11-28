@@ -4,32 +4,31 @@ import { DatabaseError } from '@core/utils/errors';
 import { userRowSchema, type UserRow } from '@core/database/schemas';
 
 /**
- * データベース行から User 型に変換
+ * Convert database row to User type
  */
 const rowToUser = (row: UserRow): User => ({
   userId: row.userId,
-  credentialId: row.credentialId,
-  publicKey: row.publicKey,
   createdAt: row.createdAt,
+  lastLoginAt: row.lastLoginAt,
 });
 
 /**
- * ユーザーを作成する
+ * Create a user
  */
 export const createUser = (db: DatabaseSync, input: CreateUserInput): void => {
   try {
     const stmt = db.prepare(`
-      INSERT INTO users (userId, credentialId, publicKey)
-      VALUES (?, ?, ?)
+      INSERT INTO users (userId)
+      VALUES (?)
     `);
-    stmt.run(input.userId, input.credentialId, input.publicKey);
+    stmt.run(input.userId);
   } catch {
     throw new DatabaseError('Failed to create user');
   }
 };
 
 /**
- * ユーザー ID でユーザーを取得する
+ * Get user by user ID
  */
 export const getUserById = (db: DatabaseSync, userId: string): User | null => {
   try {
@@ -48,29 +47,7 @@ export const getUserById = (db: DatabaseSync, userId: string): User | null => {
 };
 
 /**
- * Credential ID でユーザーを取得する
- */
-export const getUserByCredentialId = (
-  db: DatabaseSync,
-  credentialId: string,
-): User | null => {
-  try {
-    const stmt = db.prepare(`
-      SELECT * FROM users WHERE credentialId = ?
-    `);
-    const row = stmt.get(credentialId);
-    if (!row) {
-      return null;
-    }
-    const parsedRow = userRowSchema.parse(row);
-    return rowToUser(parsedRow);
-  } catch {
-    throw new DatabaseError('Failed to get user by credential ID');
-  }
-};
-
-/**
- * すべてのユーザーを取得する
+ * Get all users
  */
 export const getAllUsers = (db: DatabaseSync): User[] => {
   try {
@@ -86,12 +63,12 @@ export const getAllUsers = (db: DatabaseSync): User[] => {
 };
 
 /**
- * ユーザーの最終ログイン日時を更新する
+ * Update user last login timestamp
  */
 export const updateUserLastLogin = (db: DatabaseSync, userId: string): void => {
   try {
     const stmt = db.prepare(`
-      UPDATE users SET lastLogin = datetime('now') WHERE userId = ?
+      UPDATE users SET lastLoginAt = datetime('now') WHERE userId = ?
     `);
     stmt.run(userId);
   } catch {
@@ -100,7 +77,7 @@ export const updateUserLastLogin = (db: DatabaseSync, userId: string): void => {
 };
 
 /**
- * ユーザーを削除する (CASCADE で関連データも削除される)
+ * Delete user (related data is CASCADE deleted)
  */
 export const deleteUser = (db: DatabaseSync, userId: string): void => {
   try {

@@ -1,26 +1,61 @@
 import { z } from 'zod';
 
 /**
- * データベースから取得される行の Zod スキーマ定義
- * SQLite から取得されるデータの型を安全に検証・変換する
+ * Zod schema definitions for database rows.
+ * Used to safely validate and transform data from SQLite.
  */
 
 /**
- * users テーブルの行スキーマ
+ * users table row schema
  */
 export const userRowSchema = z.object({
   userId: z.string(),
-  credentialId: z.string(),
-  publicKey: z.string(),
   createdAt: z.string(),
-  lastLogin: z.string().nullable(),
+  lastLoginAt: z.string().nullable(),
 });
 
 export type UserRow = z.infer<typeof userRowSchema>;
 
 /**
- * secrets テーブルの行スキーマ
- * BLOB は Uint8Array として取得される
+ * passkeys table row schema
+ */
+export const passkeyRowSchema = z.object({
+  id: z.string(),
+  userId: z.string(),
+  credentialId: z.string(),
+  publicKey: z.string(),
+  counter: z.number(),
+  deviceType: z.enum(['singleDevice', 'multiDevice']),
+  backedUp: z.number(),
+  transports: z.string().nullable(),
+  createdAt: z.string(),
+  lastUsedAt: z.string().nullable(),
+});
+
+export type PasskeyRow = z.infer<typeof passkeyRowSchema>;
+
+/**
+ * WebAuthn transports schema for parsing JSON from database
+ */
+export const authenticatorTransportsSchema = z.array(
+  z.enum([
+    'usb',
+    'nfc',
+    'ble',
+    'smart-card',
+    'hybrid',
+    'internal',
+    'cable',
+  ]),
+);
+
+export type AuthenticatorTransports = z.infer<
+  typeof authenticatorTransportsSchema
+>;
+
+/**
+ * secrets table row schema
+ * BLOB is retrieved as Uint8Array
  */
 export const secretRowSchema = z.object({
   userId: z.string(),
@@ -38,7 +73,7 @@ export const secretRowSchema = z.object({
 export type SecretRow = z.infer<typeof secretRowSchema>;
 
 /**
- * tokens テーブルの行スキーマ
+ * tokens table row schema
  */
 export const tokenRowSchema = z.object({
   tokenHash: z.string(),
@@ -53,7 +88,7 @@ export const tokenRowSchema = z.object({
 export type TokenRow = z.infer<typeof tokenRowSchema>;
 
 /**
- * COUNT クエリの結果スキーマ
+ * COUNT query result schema
  */
 export const countRowSchema = z.object({
   count: z.number(),
@@ -62,7 +97,7 @@ export const countRowSchema = z.object({
 export type CountRow = z.infer<typeof countRowSchema>;
 
 /**
- * lastAccessedAt を返すクエリの結果スキーマ
+ * lastAccessedAt query result schema
  */
 export const lastAccessedAtRowSchema = z.object({
   lastAccessedAt: z.string().nullable(),
@@ -71,16 +106,16 @@ export const lastAccessedAtRowSchema = z.object({
 export type LastAccessedAtRow = z.infer<typeof lastAccessedAtRowSchema>;
 
 /**
- * lastLogin を返すクエリの結果スキーマ
+ * lastLoginAt query result schema
  */
-export const lastLoginRowSchema = z.object({
-  lastLogin: z.string().nullable(),
+export const lastLoginAtRowSchema = z.object({
+  lastLoginAt: z.string().nullable(),
 });
 
-export type LastLoginRow = z.infer<typeof lastLoginRowSchema>;
+export type LastLoginAtRow = z.infer<typeof lastLoginAtRowSchema>;
 
 /**
- * lastUsedAt を返すクエリの結果スキーマ
+ * lastUsedAt query result schema
  */
 export const lastUsedAtRowSchema = z.object({
   lastUsedAt: z.string().nullable(),
@@ -89,7 +124,7 @@ export const lastUsedAtRowSchema = z.object({
 export type LastUsedAtRow = z.infer<typeof lastUsedAtRowSchema>;
 
 /**
- * ログレベルのスキーマ
+ * Log level schema
  */
 export const logLevelSchema = z.enum([
   'DEBUG',
