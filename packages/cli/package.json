@@ -41,13 +41,17 @@
     "url": "https://github.com/mosmos21/vault-key"
   },
   "dependencies": {
+    "@hono/node-server": "^1.19.6",
     "@mosmos_21/vault-key-core": "workspace:*",
     "chalk": "^5.6.2",
     "commander": "^14.0.2",
     "dotenv": "^17.2.3",
+    "hono": "^4.10.7",
+    "open": "^11.0.0",
     "prompts": "^2.4.2"
   },
   "devDependencies": {
+    "@types/open": "^6.2.1",
     "@types/prompts": "^2.4.9",
     "execa": "^9.6.0",
     "typescript": "^5.9.3"

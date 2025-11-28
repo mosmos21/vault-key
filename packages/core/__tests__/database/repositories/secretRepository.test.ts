@@ -21,12 +21,7 @@ describe('secretRepository', () => {
 
   beforeEach(() => {
     db = createConnection(':memory:');
-    // テスト用ユーザーを作成
-    createUser(db, {
-      userId: 'user1',
-      credentialId: 'cred1',
-      publicKey: '{}',
-    });
+    createUser(db, { userId: 'user1' });
   });
 
   afterEach(() => {

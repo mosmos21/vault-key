@@ -6,6 +6,10 @@
     "lib": ["ES2022"],
     "moduleResolution": "bundler",
 
+    // JSX Settings (for Hono)
+    "jsx": "react-jsx",
+    "jsxImportSource": "hono/jsx",
+
     // Output Settings
     "sourceMap": true,
     "declaration": true,

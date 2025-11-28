@@ -1,13 +1,12 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { DatabaseSync } from 'node:sqlite';
-import { createConnection, closeConnection } from '@core/database';
+import { createConnection, closeConnection, createUser } from '@core/database';
 import {
   saveSecret,
   retrieveSecret,
   removeSecret,
   listAllSecrets,
 } from '@core/secrets';
-import { authenticateDummy } from '@core/auth/dummyAuth';
 import { generateMasterKey } from '@core/crypto/encryption';
 import { NotFoundError, ValidationError } from '@core/utils/errors';
 
@@ -19,7 +18,7 @@ describe('Secrets Management', () => {
   beforeEach(() => {
     db = createConnection(':memory:');
     masterKey = generateMasterKey();
-    authenticateDummy(db, userId);
+    createUser(db, { userId });
   });
 
   afterEach(() => {
@@ -252,7 +251,7 @@ describe('Secrets Management', () => {
 
     it('should only show secrets for specified user', () => {
       const user2 = 'user2';
-      authenticateDummy(db, user2);
+      createUser(db, { userId: user2 });
 
       saveSecret(db, userId, 'key1', 'value1', masterKey);
       saveSecret(db, user2, 'key2', 'value2', masterKey);

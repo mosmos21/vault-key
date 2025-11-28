@@ -1,8 +1,18 @@
 import { DatabaseSync } from 'node:sqlite';
-import type { VaultKeyConfig, DecryptedSecret, Token } from '@core/types';
+import type {
+  PublicKeyCredentialCreationOptionsJSON,
+  PublicKeyCredentialRequestOptionsJSON,
+  RegistrationResponseJSON,
+  AuthenticationResponseJSON,
+} from '@simplewebauthn/server';
+import type {
+  VaultKeyConfig,
+  DecryptedSecret,
+  Token,
+  Passkey,
+} from '@core/types';
 import { loadConfig } from '@core/config';
 import { createConnection, closeConnection } from '@core/database';
-import { authenticateDummy } from '@core/auth/dummyAuth';
 import {
   issueToken,
   verifyToken,
@@ -15,9 +25,14 @@ import {
   listAllSecrets,
 } from '@core/secrets/secretsService';
 import { listUserTokens } from '@core/database/repositories/tokenRepository';
+import {
+  generatePasskeyRegistrationOptions,
+  verifyPasskeyRegistration,
+  generatePasskeyAuthenticationOptions,
+  verifyPasskeyAuthentication,
+} from '@core/passkey';
 import { logger } from '@core/logger';
 
-// ExperimentalWarning を抑制
 process.removeAllListeners('warning');
 process.on('warning', (warning) => {
   if (warning.name === 'ExperimentalWarning') {
@@ -27,16 +42,15 @@ process.on('warning', (warning) => {
 });
 
 /**
- * VaultKeyClient のコンストラクタオプション
+ * VaultKeyClient constructor options
  */
 export type VaultKeyClientOptions = Partial<VaultKeyConfig> & {
-  /** Master key file path (CLI option --master-key-file) */
   masterKeyFile?: string;
 };
 
 /**
- * VaultKey のクライアントクラス
- * 機密情報の管理、ユーザー認証、トークン管理などの API を提供する
+ * VaultKey client class.
+ * Provides API for secret management, user authentication, and token management.
  */
 export class VaultKeyClient {
   private db: DatabaseSync;
@@ -74,16 +88,61 @@ export class VaultKeyClient {
   }
 
   /**
-   * ユーザーを登録する (ダミー認証)
-   * v0.1.0 用の簡易実装
+   * Get registration options for Passkey registration
    */
-  registerUser(userId: string): void {
-    authenticateDummy(this.db, userId);
+  async getRegistrationOptions(
+    userId: string,
+  ): Promise<PublicKeyCredentialCreationOptionsJSON> {
+    return generatePasskeyRegistrationOptions(this.db, userId);
   }
 
   /**
-   * トークンを発行する (ダミー認証)
-   * v0.1.0 用の簡易実装
+   * Verify Passkey registration response
+   */
+  async verifyRegistration(
+    userId: string,
+    response: RegistrationResponseJSON,
+  ): Promise<Passkey> {
+    return verifyPasskeyRegistration(this.db, userId, response);
+  }
+
+  /**
+   * Get authentication options for Passkey authentication
+   */
+  async getAuthenticationOptions(
+    userId: string,
+  ): Promise<PublicKeyCredentialRequestOptionsJSON> {
+    return generatePasskeyAuthenticationOptions(this.db, userId);
+  }
+
+  /**
+   * Verify Passkey authentication response
+   */
+  async verifyAuthentication(
+    userId: string,
+    response: AuthenticationResponseJSON,
+  ): Promise<{ verified: boolean; token: string }> {
+    const result = await verifyPasskeyAuthentication(this.db, userId, response);
+
+    if (!result.verified) {
+      throw new Error('Authentication failed');
+    }
+
+    const tokenResult = issueToken(
+      this.db,
+      userId,
+      this.config.tokenTtl,
+      this.config.maxTokensPerUser,
+    );
+
+    return {
+      verified: true,
+      token: tokenResult.token,
+    };
+  }
+
+  /**
+   * Issue a token
    */
   issueToken(
     userId: string,
@@ -94,7 +153,7 @@ export class VaultKeyClient {
   }
 
   /**
-   * 機密情報を取得する
+   * Get a secret
    */
   getSecret(key: string, token: string): DecryptedSecret {
     const userId = verifyToken(this.db, token);
@@ -102,7 +161,7 @@ export class VaultKeyClient {
   }
 
   /**
-   * 機密情報を保存する
+   * Store a secret
    */
   storeSecret(
     key: string,
@@ -122,7 +181,7 @@ export class VaultKeyClient {
   }
 
   /**
-   * 機密情報を更新する
+   * Update a secret
    */
   updateSecret(
     key: string,
@@ -142,7 +201,7 @@ export class VaultKeyClient {
   }
 
   /**
-   * 機密情報を削除する
+   * Delete a secret
    */
   deleteSecret(key: string, token: string): void {
     const userId = verifyToken(this.db, token);
@@ -150,7 +209,7 @@ export class VaultKeyClient {
   }
 
   /**
-   * キー一覧を取得する
+   * List secrets
    */
   listSecrets(
     token: string,
@@ -167,7 +226,7 @@ export class VaultKeyClient {
   }
 
   /**
-   * トークンを無効化する
+   * Revoke a token
    */
   revokeToken(token: string): void {
     verifyToken(this.db, token);
@@ -175,7 +234,7 @@ export class VaultKeyClient {
   }
 
   /**
-   * トークン一覧を取得する
+   * List tokens
    */
   listTokens(token: string): Token[] {
     const userId = verifyToken(this.db, token);
@@ -183,7 +242,7 @@ export class VaultKeyClient {
   }
 
   /**
-   * データベース接続を閉じる
+   * Close database connection
    */
   close(): void {
     closeConnection(this.db);
