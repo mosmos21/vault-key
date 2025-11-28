@@ -1,7 +1,22 @@
 import { Command } from 'commander';
 import { VaultKeyClient } from '@mosmos_21/vault-key-core';
 import prompts from 'prompts';
-import { formatSuccess, formatError, tokenStorage } from '../utils';
+import open from 'open';
+import { formatSuccess, formatError, formatInfo, tokenStorage } from '../utils';
+import { startAuthServer } from '../server';
+
+const DEFAULT_AUTH_PORT = 5432;
+
+const getAuthPort = (): number => {
+  const envPort = process.env.VAULTKEY_AUTH_PORT;
+  if (envPort) {
+    const port = parseInt(envPort, 10);
+    if (!isNaN(port) && port > 0 && port < 65536) {
+      return port;
+    }
+  }
+  return DEFAULT_AUTH_PORT;
+};
 
 type CommandOptions = {
   dbPath?: string;
@@ -10,34 +25,36 @@ type CommandOptions = {
 };
 
 /**
- * user コマンドを作成する
+ * Create user command
  */
 export const createUserCommand = (): Command => {
   const command = new Command('user');
 
-  command.description('ユーザー管理');
+  command.description('User management');
 
-  // register サブコマンド
+  // register subcommand
   command
     .command('register')
-    .description('ユーザーを登録する')
-    .option('--db-path <path>', 'データベースファイルのパス')
-    .option('--master-key <key>', 'マスターキー (64 文字の 16 進数文字列)')
-    .option('--master-key-file <path>', 'マスターキーファイルのパス')
+    .description('Register a new user with Passkey')
+    .option('--db-path <path>', 'Database file path')
+    .option('--master-key <key>', 'Master key (64 character hex string)')
+    .option('--master-key-file <path>', 'Master key file path')
     .action(async (options: CommandOptions) => {
       try {
         const response = await prompts({
           type: 'text',
           name: 'userId',
-          message: 'ユーザー ID を入力してください:',
+          message: 'Enter user ID:',
           validate: (value) =>
-            value.trim().length > 0 ? true : 'ユーザー ID は必須です',
+            value.trim().length > 0 ? true : 'User ID is required',
         });
 
         if (!response.userId) {
-          console.error(formatError('ユーザー登録がキャンセルされました'));
+          console.error(formatError('User registration cancelled'));
           process.exit(1);
         }
+
+        const userId = response.userId.trim();
 
         const client = new VaultKeyClient({
           ...(options.dbPath ? { dbPath: options.dbPath } : {}),
@@ -47,41 +64,67 @@ export const createUserCommand = (): Command => {
             : {}),
         });
 
-        await client.registerUser(response.userId.trim());
+        console.log(formatInfo('Starting authentication server...'));
+        console.log(
+          formatInfo(`Please complete Passkey registration in the browser.`),
+        );
+        console.log(formatInfo(`URL: http://localhost:${getAuthPort()}`));
+
+        // Open browser
+        await open(`http://localhost:${getAuthPort()}`);
+
+        const result = await startAuthServer({
+          client,
+          userId,
+          port: getAuthPort(),
+          mode: 'register',
+        });
+
         client.close();
 
-        console.log(
-          formatSuccess(`ユーザー "${response.userId.trim()}" を登録しました`),
-        );
+        if (result.success) {
+          console.log(
+            formatSuccess(`User "${userId}" registered successfully`),
+          );
+        } else {
+          console.error(
+            formatError(
+              `User registration failed: ${result.error ?? 'Unknown error'}`,
+            ),
+          );
+          process.exit(1);
+        }
       } catch (error) {
         const message =
           error instanceof Error ? error.message : 'Unknown error';
-        console.error(formatError(`ユーザー登録に失敗しました: ${message}`));
+        console.error(formatError(`User registration failed: ${message}`));
         process.exit(1);
       }
     });
 
-  // login サブコマンド
+  // login subcommand
   command
     .command('login')
-    .description('ログインしてトークンを発行する')
-    .option('--db-path <path>', 'データベースファイルのパス')
-    .option('--master-key <key>', 'マスターキー (64 文字の 16 進数文字列)')
-    .option('--master-key-file <path>', 'マスターキーファイルのパス')
+    .description('Login with Passkey and issue token')
+    .option('--db-path <path>', 'Database file path')
+    .option('--master-key <key>', 'Master key (64 character hex string)')
+    .option('--master-key-file <path>', 'Master key file path')
     .action(async (options: CommandOptions) => {
       try {
         const response = await prompts({
           type: 'text',
           name: 'userId',
-          message: 'ユーザー ID を入力してください:',
+          message: 'Enter user ID:',
           validate: (value) =>
-            value.trim().length > 0 ? true : 'ユーザー ID は必須です',
+            value.trim().length > 0 ? true : 'User ID is required',
         });
 
         if (!response.userId) {
-          console.error(formatError('ログインがキャンセルされました'));
+          console.error(formatError('Login cancelled'));
           process.exit(1);
         }
+
+        const userId = response.userId.trim();
 
         const client = new VaultKeyClient({
           ...(options.dbPath ? { dbPath: options.dbPath } : {}),
@@ -91,36 +134,56 @@ export const createUserCommand = (): Command => {
             : {}),
         });
 
-        const result = client.issueToken(response.userId.trim());
-        const token = result.token;
+        console.log(formatInfo('Starting authentication server...'));
+        console.log(
+          formatInfo(`Please complete Passkey authentication in the browser.`),
+        );
+        console.log(formatInfo(`URL: http://localhost:${getAuthPort()}`));
+
+        // Open browser
+        await open(`http://localhost:${getAuthPort()}`);
+
+        const result = await startAuthServer({
+          client,
+          userId,
+          port: getAuthPort(),
+          mode: 'login',
+        });
+
         client.close();
 
-        // トークンをファイルに保存
-        tokenStorage.save(token);
+        if (result.success && result.token) {
+          // Save token to file
+          tokenStorage.save(result.token);
 
-        console.log(formatSuccess('ログインしました'));
-        console.log(`トークン: ${token}`);
-        console.log(`トークンは ~/.vaultkey/token に保存されました`);
+          console.log(formatSuccess('Login successful'));
+          console.log(`Token saved to ~/.vaultkey/token`);
+        } else {
+          console.error(
+            formatError(`Login failed: ${result.error ?? 'Unknown error'}`),
+          );
+          process.exit(1);
+        }
       } catch (error) {
         const message =
           error instanceof Error ? error.message : 'Unknown error';
-        console.error(formatError(`ログインに失敗しました: ${message}`));
+        console.error(formatError(`Login failed: ${message}`));
         process.exit(1);
       }
     });
 
-  // logout サブコマンド
+  // logout subcommand
   command
     .command('logout')
-    .description('ログアウトしてトークンファイルを削除する')
+    .description('Logout and delete token file')
     .action(() => {
       try {
         tokenStorage.remove();
-        console.log(formatSuccess('ログアウトしました'));
+        console.log(formatSuccess('Logged out'));
       } catch (error) {
         const message =
           error instanceof Error ? error.message : 'Unknown error';
-        console.error(formatError(`ログアウトに失敗しました: ${message}`));
+        console.error(formatError(`Logout failed: ${message}`));
         process.exit(1);
       }
     });
